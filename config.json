@@ -4,6 +4,7 @@
     "dumbbell_12kg": 1,
     "bench_press_30kg": 1,
     "stationary_bike": 1,
+    "parallel_bars": 1,
     "floor_space": true
   },
   "training_principles": {
@@ -67,6 +68,36 @@
         "description": "Flexiones con manos en mancuernas para mayor rango de movimiento",
         "youtube_url": "https://www.youtube.com/watch?v=cfns5VQ-Rhs",
         "difficulty_level": 4
+      },
+      {
+        "name": "Flexiones Profundas (Deficit Push-ups)",
+        "equipment": "parallel_bars",
+        "sets": 1,
+        "reps": "8-12",
+        "description": "Agarra las barras inferiores y baja el pecho más allá del nivel de las manos para un rango de movimiento superior",
+        "youtube_url": "https://www.youtube.com/watch?v=IODxDxX7oi4",
+        "difficulty_level": 1,
+        "category": "calisthenics"
+      },
+      {
+        "name": "Fondos con Torso Inclinado",
+        "equipment": "parallel_bars",
+        "sets": 1,
+        "reps": "6-10",
+        "description": "En las barras superiores, inclínate hacia adelante para enfatizar la parte inferior del pectoral",
+        "youtube_url": "https://www.youtube.com/watch?v=OUgsJ8-Vi0E",
+        "difficulty_level": 2,
+        "category": "calisthenics"
+      },
+      {
+        "name": "Fondos Clásicos (Dips)",
+        "equipment": "parallel_bars",
+        "sets": 1,
+        "reps": "6-8",
+        "description": "Ejercicio estrella en barras superiores. La estructura inferior aporta estabilidad para progresar con lastre",
+        "youtube_url": "https://www.youtube.com/watch?v=2z8JmcrW-te",
+        "difficulty_level": 3,
+        "category": "calisthenics"
       }
     ],
     "espalda": [
@@ -114,6 +145,56 @@
         "description": "Levanta la barra desde el suelo manteniendo la espalda recta",
         "youtube_url": "https://www.youtube.com/watch?v=op9kVnSso6Q",
         "difficulty_level": 4
+      },
+      {
+        "name": "Remo Invertido Clásico (Agarre Neutro)",
+        "equipment": "parallel_bars",
+        "sets": 1,
+        "reps": "10-12",
+        "description": "Paralelas juntas, cuerpo boca arriba entre ellas. Agarre neutro en los puños superiores, piernas estiradas apoyando solo los talones. Tira llevando el pecho a las barras apretando escápulas atrás. Trabaja dorsal ancho, romboides, trapecio medio y antebrazos",
+        "youtube_url": "https://www.youtube.com/watch?v=hXTc1mZDYSU",
+        "difficulty_level": 1,
+        "category": "calisthenics"
+      },
+      {
+        "name": "Remo Invertido Supino (Enfoque Dorsal y Bíceps)",
+        "equipment": "parallel_bars",
+        "sets": 1,
+        "reps": "8-12",
+        "description": "Misma posición que el remo clásico, pero con palmas hacia la cara (agarre supino). Los codos viajan pegados al cuerpo para enfatizar dorsal inferior y bíceps",
+        "youtube_url": "https://www.youtube.com/watch?v=GZbf-zSl0qM",
+        "difficulty_level": 2,
+        "category": "calisthenics"
+      },
+      {
+        "name": "Remo Invertido con Pies Elevados",
+        "equipment": "parallel_bars",
+        "sets": 1,
+        "reps": "6-10",
+        "description": "Remo invertido con talones sobre banco, silla o sofá. Cuerpo casi paralelo al suelo para aumentar drásticamente el porcentaje de peso corporal. Trabaja espalda alta y erectores espinales",
+        "youtube_url": "https://www.youtube.com/watch?v=9fItzuh9Iok",
+        "difficulty_level": 3,
+        "category": "calisthenics"
+      },
+      {
+        "name": "Remo Australiano en Tuck (Pies Suspendidos)",
+        "equipment": "parallel_bars",
+        "sets": 1,
+        "reps": "5-8",
+        "description": "Colgado de las barras superiores con rodillas al pecho flotando en el aire. Desde suspensión pura, tira el cuerpo hacia arriba. Lo más cercano a una dominada estricta en paralelas",
+        "youtube_url": "https://www.youtube.com/watch?v=9fItzuh9Iok",
+        "difficulty_level": 4,
+        "category": "calisthenics"
+      },
+      {
+        "name": "Encogimientos Escapulares en Inversión",
+        "equipment": "parallel_bars",
+        "sets": 1,
+        "reps": "10-15",
+        "description": "Colgado boca arriba con brazos estirados y bloqueados. Junta y separa escápulas elevando el pecho unos centímetros sin flexionar codos. Aísla trapecio medio/inferior y romboides",
+        "youtube_url": "https://www.youtube.com/watch?v=xQNrFHEMHA0",
+        "difficulty_level": 1,
+        "category": "calisthenics"
       }
     ],
     "hombros": [
@@ -161,6 +242,26 @@
         "description": "Inclinado hacia adelante, eleva las mancuernas hacia atrás trabajando deltoides posterior",
         "youtube_url": "https://www.youtube.com/watch?v=P3mKu0ByTsE",
         "difficulty_level": 4
+      },
+      {
+        "name": "Flexiones de Pica (Pike Push-ups)",
+        "equipment": "parallel_bars",
+        "sets": 1,
+        "reps": "8-12",
+        "description": "Con los pies en el suelo y el cuerpo en forma de V, usa los agarres inferiores para trabajar la fuerza vertical de hombros",
+        "youtube_url": "https://www.youtube.com/watch?v=spoSDxO2zM4",
+        "difficulty_level": 2,
+        "category": "calisthenics"
+      },
+      {
+        "name": "Soporte Isométrico (Soporte de Fondos)",
+        "equipment": "parallel_bars",
+        "sets": 1,
+        "reps": "20-40 segundos",
+        "description": "Aguanta arriba del todo bloqueando codos y deprimiendo hombros. Excelente para la salud escapular",
+        "youtube_url": "https://www.youtube.com/watch?v=K1WVCykpJb4",
+        "difficulty_level": 3,
+        "category": "calisthenics"
       }
     ],
     "brazos": [
@@ -238,6 +339,26 @@
         "description": "7 repeticiones parciales abajo, 7 arriba, 7 completas - técnica avanzada",
         "youtube_url": "https://www.youtube.com/watch?v=cf_OjWMcJLs",
         "difficulty_level": 4
+      },
+      {
+        "name": "Flexiones de Tríceps (Agarre Neutro)",
+        "equipment": "parallel_bars",
+        "sets": 1,
+        "reps": "8-12",
+        "description": "Manos en los agarres inferiores con agarre neutro para aislar el tríceps y reducir estrés en muñecas",
+        "youtube_url": "https://www.youtube.com/watch?v=6kALZikYxD0",
+        "difficulty_level": 1,
+        "category": "calisthenics"
+      },
+      {
+        "name": "Fondos con Enfoque en Tríceps",
+        "equipment": "parallel_bars",
+        "sets": 1,
+        "reps": "6-10",
+        "description": "Cuerpo totalmente vertical y codos pegados al cuerpo para maximizar el trabajo de tríceps",
+        "youtube_url": "https://www.youtube.com/watch?v=6kALZikYxD0",
+        "difficulty_level": 2,
+        "category": "calisthenics"
       }
     ],
     "piernas": [
@@ -370,6 +491,16 @@
         "description": "Desde plancha, alterna elevando un brazo al frente",
         "youtube_url": "https://www.youtube.com/watch?v=bVPI9CjJXwE",
         "difficulty_level": 4
+      },
+      {
+        "name": "Elevaciones de Rodillas en Paralelas",
+        "equipment": "parallel_bars",
+        "sets": 1,
+        "reps": "10-15",
+        "description": "Soportando tu peso en las barras superiores, sube rodillas al pecho de forma controlada",
+        "youtube_url": "https://www.youtube.com/watch?v=JB2oyawG9KI",
+        "difficulty_level": 1,
+        "category": "calisthenics"
       }
     ],
     "abs_avanzados": [
@@ -399,6 +530,36 @@
         "description": "Acostado, eleva simultáneamente piernas y torso formando una V",
         "youtube_url": "https://www.youtube.com/watch?v=7UVgs18Y1P4",
         "difficulty_level": 4
+      },
+      {
+        "name": "Elevaciones de Piernas Estiradas en Paralelas",
+        "equipment": "parallel_bars",
+        "sets": 1,
+        "reps": "8-12",
+        "description": "Rodillas bloqueadas, sube los pies hasta formar un ángulo de 90° colgado de las barras",
+        "youtube_url": "https://www.youtube.com/watch?v=JB2oyawG9KI",
+        "difficulty_level": 3,
+        "category": "calisthenics"
+      },
+      {
+        "name": "L-Sit Hold en Paralelas",
+        "equipment": "parallel_bars",
+        "sets": 1,
+        "reps": "10-20 segundos",
+        "description": "Sube las piernas estiradas a 90° y aguanta el tiempo que marque tu rutina",
+        "youtube_url": "https://www.youtube.com/watch?v=1r1ES5pA6ak",
+        "difficulty_level": 4,
+        "category": "calisthenics"
+      },
+      {
+        "name": "L-Sit a Knee Raise Dinámico",
+        "equipment": "parallel_bars",
+        "sets": 1,
+        "reps": "6-10",
+        "description": "Aguanta en L y, cuando no puedas más, pasa a flexiones de rodilla para agotar el core",
+        "youtube_url": "https://www.youtube.com/watch?v=1r1ES5pA6ak",
+        "difficulty_level": 4,
+        "category": "calisthenics"
       }
     ],
     "cardio": [
@@ -420,6 +581,15 @@
         "reps": "10-15 cada dirección",
         "description": "Círculos amplios con los hombros hacia adelante y luego hacia atrás",
         "youtube_url": "https://www.youtube.com/watch?v=UJnN2qRbgUs",
+        "difficulty_level": 1
+      },
+      {
+        "name": "Encogimientos Escapulares en Inversión",
+        "equipment": "parallel_bars",
+        "sets": 1,
+        "reps": "10-15",
+        "description": "Colgado boca arriba en paralelas con brazos estirados. Junta y separa escápulas sin flexionar codos. Ideal calentamiento antes de remos o fondos",
+        "youtube_url": "https://www.youtube.com/watch?v=xQNrFHEMHA0",
         "difficulty_level": 1
       },
       {
@@ -748,7 +918,7 @@
       "domingo": []
     }
   },
-  "version": "1.2.8",
+  "version": "1.4.0",
   "current_week": 1,
   "total_weeks": 20
 }

@@ -92,14 +92,15 @@ class ExerciseLibraryModule(BaseTrainer):
         )
         
         # Filtro por equipamiento
-        equipment_options: List[str] = ['Todos', 'floor_space', 'dumbbells_8kg', 'dumbbell_12kg', 'bench_press_30kg', 'stationary_bike']
+        equipment_options: List[str] = ['Todos', 'floor_space', 'dumbbells_8kg', 'dumbbell_12kg', 'bench_press_30kg', 'stationary_bike', 'parallel_bars']
         equipment_labels: Dict[str, str] = {
             'Todos': 'Todos',
             'floor_space': 'Solo suelo',
             'dumbbells_8kg': 'Mancuernas 8kg',
             'dumbbell_12kg': 'Mancuerna 12kg',
             'bench_press_30kg': 'Banco con barra 30kg',
-            'stationary_bike': 'Bicicleta estática'
+            'stationary_bike': 'Bicicleta estática',
+            'parallel_bars': 'Paralelas'
         }
 
         def format_equipment(option: str) -> str:

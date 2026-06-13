@@ -13,11 +13,42 @@ import streamlit as st
 
 class BaseTrainer:
     """Clase base con funcionalidad core del sistema"""
+
+    USER_SETTINGS_FILE = 'user_settings.json'
+
+    DEFAULT_USER_EQUIPMENT = {
+        'mancuernas': True,
+        'barra': True,
+        'banco': True,
+        'suelo': True,
+        'bicicleta': True,
+        'paralelas': True,
+    }
+
+    USER_EQUIPMENT_LABELS = {
+        'mancuernas': 'Mancuernas',
+        'barra': 'Barra ligera (30 kg)',
+        'banco': 'Banco de press',
+        'suelo': 'Espacio en el suelo',
+        'bicicleta': 'Bicicleta estática',
+        'paralelas': 'Paralelas (opcional)',
+    }
+
+    BENCH_ONLY_EXERCISES = {'Fondos en Silla'}
+    BAR_ONLY_EXERCISES = {'Peso Muerto con Barra'}
+    BAR_BENCH_EXERCISES = {
+        'Press de Banca con Barra',
+        'Press Inclinado con Barra',
+        'Remo con Barra',
+    }
+
+    ESTIMATED_TRAINING_KCAL_PER_SESSION = 320
     
     def __init__(self):
         """Inicializar la aplicación"""
         self.config = self.load_config()
         self.progress_data = self.load_progress_data()
+        self.user_settings = self.load_user_settings()
         
         # Configurar estado de sesión con auto-detección de semana
         if 'current_week' not in st.session_state:
@@ -198,35 +229,63 @@ class BaseTrainer:
         return 2, '12-15'
     
     def get_planned_exercises_for_group(self, muscle_group: str, day_key: str, week_number: int) -> list[dict]:
-        """Devolver ejercicios planificados aplicando progresión por nivel de dificultad y alternancia de antebrazos"""
+        """Devolver ejercicios planificados aplicando progresión por nivel, alternancia de antebrazos y calistenia como complemento"""
         all_ex = self.config.get('exercises', {}).get(muscle_group, [])
+
+        if muscle_group == 'abs':
+            all_ex = all_ex + self.config.get('exercises', {}).get('abs_avanzados', [])
         
         # Obtener el nivel actual basado en la semana
         current_level = (week_number - 1) // 4 + 1
         
         # Filtrar ejercicios por nivel de dificultad (incluye ejercicios del nivel actual y anteriores)
         available_exercises = self._filter_exercises_by_level(all_ex, current_level)
+        available_exercises = self.filter_exercises_by_equipment(available_exercises)
+        primary, calisthenics = self._split_primary_and_calisthenics(available_exercises)
         
         if muscle_group == 'brazos':
-            # En brazos: incluir todos los ejercicios disponibles, pero para antebrazos mantener rotación
-            non_forearm = [e for e in available_exercises if e.get('category') != 'forearm']
-            
-            # Para antebrazos, aplicar progresión por nivel y rotación
-            forearm_exercises = [e for e in available_exercises if e.get('category') == 'forearm']
+            # En brazos: incluir todos los ejercicios principales, alternar antebrazos y añadir calistenia
+            non_forearm = [e for e in primary if e.get('category') != 'forearm']
+            forearm_exercises = [e for e in primary if e.get('category') == 'forearm']
             chosen = self._choose_forearm_exercise_by_level(day_key, week_number, forearm_exercises)
-            
-            if chosen:
-                return non_forearm + [chosen]
-            else:
-                return non_forearm
+            result = non_forearm + ([chosen] if chosen else [])
+            return self._append_calisthenics_bonus(result, calisthenics, muscle_group, day_key, week_number)
         
         elif muscle_group == 'piernas':
-            # En piernas: incluir todos los ejercicios disponibles según nivel
-            return self._get_planned_leg_exercises(day_key, week_number, available_exercises)
+            return self._append_calisthenics_bonus(
+                self._get_planned_leg_exercises(day_key, week_number, primary),
+                calisthenics, muscle_group, day_key, week_number
+            )
         
         else:
-            # Para otros grupos musculares: mostrar todos los ejercicios disponibles según nivel
-            return available_exercises
+            return self._append_calisthenics_bonus(primary, calisthenics, muscle_group, day_key, week_number)
+    
+    def _split_primary_and_calisthenics(self, exercises: list[dict]) -> tuple[list[dict], list[dict]]:
+        """Separar ejercicios principales (peso/suelo) de complementos de calistenia en paralelas"""
+        primary = [e for e in exercises if e.get('category') != 'calisthenics']
+        calisthenics = [e for e in exercises if e.get('category') == 'calisthenics']
+        return primary, calisthenics
+
+    def _choose_calisthenics_exercise(self, calisthenics: list[dict], muscle_group: str, day_key: str, week_number: int) -> dict | None:
+        """Elegir un ejercicio de calistenia rotativo como complemento (máximo uno por sesión)"""
+        if not calisthenics:
+            return None
+
+        calisthenics = sorted(calisthenics, key=lambda x: x.get('difficulty_level', 1))
+
+        day_names = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
+        day_idx = day_names.index(day_key) if day_key in day_names else 0
+        group_offset = sum(ord(c) for c in muscle_group) % 7
+        rotation_index = ((week_number - 1) * 7 + day_idx + group_offset) % len(calisthenics)
+
+        return calisthenics[rotation_index]
+
+    def _append_calisthenics_bonus(self, primary_list: list[dict], calisthenics: list[dict], muscle_group: str, day_key: str, week_number: int) -> list[dict]:
+        """Añadir como máximo un ejercicio de calistenia al final de la sesión"""
+        chosen = self._choose_calisthenics_exercise(calisthenics, muscle_group, day_key, week_number)
+        if chosen:
+            return primary_list + [chosen]
+        return primary_list
     
     def _filter_exercises_by_level(self, exercises: list[dict], current_level: int) -> list[dict]:
         """Filtrar ejercicios según el nivel de dificultad actual - incluye ejercicios del nivel actual y anteriores"""
@@ -337,6 +396,240 @@ class BaseTrainer:
             return original_reps
 
     # --- FIN utilidades nuevas ---
+
+    def load_user_settings(self) -> Dict[str, Any]:
+        """Cargar preferencias del usuario (equipamiento disponible, etc.)"""
+        if os.path.exists(self.USER_SETTINGS_FILE):
+            try:
+                with open(self.USER_SETTINGS_FILE, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                equipment = {**self.DEFAULT_USER_EQUIPMENT, **data.get('available_equipment', {})}
+                return {'available_equipment': equipment, **{k: v for k, v in data.items() if k != 'available_equipment'}}
+            except (json.JSONDecodeError, OSError):
+                pass
+        return {'available_equipment': dict(self.DEFAULT_USER_EQUIPMENT)}
+
+    def save_user_settings(self):
+        """Guardar preferencias del usuario"""
+        self.user_settings['last_updated'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        try:
+            with open(self.USER_SETTINGS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(self.user_settings, f, indent=2, ensure_ascii=False)
+        except OSError as e:
+            st.error(f"Error guardando configuración de usuario: {e}")
+
+    def get_user_equipment(self) -> Dict[str, bool]:
+        """Obtener equipamiento disponible del usuario"""
+        return self.user_settings.get('available_equipment', dict(self.DEFAULT_USER_EQUIPMENT))
+
+    def set_user_equipment(self, equipment: Dict[str, bool]):
+        """Actualizar equipamiento disponible del usuario"""
+        self.user_settings['available_equipment'] = equipment
+        self.save_user_settings()
+
+    def is_exercise_available(self, exercise: dict) -> bool:
+        """Comprobar si un ejercicio puede programarse según el equipamiento del usuario"""
+        equipment_key = exercise.get('equipment')
+        exercise_name = exercise.get('name', '')
+        user_equipment = self.get_user_equipment()
+
+        if equipment_key in ('dumbbells_8kg', 'dumbbells_10kg', 'dumbbell_12kg'):
+            return user_equipment.get('mancuernas', True)
+        if equipment_key == 'floor_space':
+            return user_equipment.get('suelo', True)
+        if equipment_key == 'stationary_bike':
+            return user_equipment.get('bicicleta', True)
+        if equipment_key == 'parallel_bars':
+            return user_equipment.get('paralelas', False)
+        if equipment_key == 'bench_press_30kg':
+            has_bar = user_equipment.get('barra', True)
+            has_bench = user_equipment.get('banco', True)
+            if exercise_name in self.BENCH_ONLY_EXERCISES:
+                return has_bench
+            if exercise_name in self.BAR_ONLY_EXERCISES:
+                return has_bar
+            if exercise_name in self.BAR_BENCH_EXERCISES:
+                return has_bar and has_bench
+            return has_bar and has_bench
+
+        return True
+
+    def filter_exercises_by_equipment(self, exercises: list[dict]) -> list[dict]:
+        """Filtrar ejercicios según el equipamiento disponible del usuario"""
+        return [exercise for exercise in exercises if self.is_exercise_available(exercise)]
+
+    def render_equipment_settings(self):
+        """Renderizar selector de equipamiento doméstico disponible"""
+        st.markdown("### 🏠 Tu equipamiento")
+        st.caption(
+            "Perfil objetivo: entrenamiento doméstico con material básico. "
+            "Marca lo que tienes y el plan se adaptará automáticamente."
+        )
+
+        current = self.get_user_equipment()
+        updated = {}
+        for key, label in self.USER_EQUIPMENT_LABELS.items():
+            is_optional = key == 'paralelas'
+            help_text = "Complemento de calistenia. Si no las tienes, no se programan." if is_optional else None
+            updated[key] = st.checkbox(label, value=current.get(key, True), key=f"equipment_{key}", help=help_text)
+
+        if st.button("💾 Guardar equipamiento", type="primary", use_container_width=True):
+            self.set_user_equipment(updated)
+            st.success("✅ Plan adaptado a tu equipamiento")
+            st.rerun()
+
+        unavailable = [self.USER_EQUIPMENT_LABELS[k] for k, v in updated.items() if not v]
+        if unavailable:
+            st.caption(f"Sin programar: {', '.join(unavailable)}")
+
+    def load_nutrition_data(self) -> Dict[str, Any]:
+        """Cargar datos de nutrición (lectura compartida entre módulos)"""
+        nutrition_file = 'nutrition_data.json'
+        if os.path.exists(nutrition_file):
+            try:
+                with open(nutrition_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, OSError):
+                pass
+        return {
+            'profile': {},
+            'targets': {},
+            'daily_logs': {},
+            'weight_log': {},
+        }
+
+    def estimate_daily_activity_kcal(self, bmr: float, activity_level: str) -> float:
+        """Estimar kcal de actividad diaria sin contar el entrenamiento estructurado"""
+        tdee = self._calculate_tdee_from_bmr(bmr, activity_level)
+        return max(tdee - bmr, 0)
+
+    def _calculate_tdee_from_bmr(self, bmr: float, activity_level: str) -> float:
+        activity_multipliers = {
+            'sedentary': 1.2,
+            'light': 1.375,
+            'moderate': 1.55,
+            'active': 1.725,
+            'very_active': 1.9,
+        }
+        return bmr * activity_multipliers.get(activity_level, 1.55)
+
+    def estimate_training_kcal(self) -> float:
+        """Estimación orientativa del gasto por sesión de entrenamiento"""
+        return float(self.ESTIMATED_TRAINING_KCAL_PER_SESSION)
+
+    def calculate_bmr(self, weight: float, height: float, age: int, sex: str) -> float:
+        """Calcular tasa metabólica basal usando Mifflin-St Jeor"""
+        if sex == 'M':
+            return (10 * weight) + (6.25 * height) - (5 * age) + 5
+        return (10 * weight) + (6.25 * height) - (5 * age) - 161
+
+    def get_weekly_coherence_summary(self, week_number: int) -> Dict[str, Any]:
+        """Resumen semanal cruzando entrenamiento, nutrición y peso"""
+        week_dates_info = self.get_week_dates(week_number) or {}
+        dates = week_dates_info.get('dates', [])
+        nutrition_data = self.load_nutrition_data()
+        profile = nutrition_data.get('profile', {})
+        targets = nutrition_data.get('targets', {})
+        daily_logs = nutrition_data.get('daily_logs', {})
+        weight_log = nutrition_data.get('weight_log', {})
+
+        training_days_planned = 0
+        training_days_completed = 0
+        calorie_days = 0
+        total_calories = 0
+        total_balance = 0
+        balance_days = 0
+
+        age = profile.get('age')
+        weight = profile.get('weight')
+        height = profile.get('height')
+        sex = profile.get('sex', 'M')
+        activity_level = profile.get('activity_level', 'moderate')
+        has_profile = all(value is not None for value in [age, weight, height])
+
+        bmr = self.calculate_bmr(weight, height, age, sex) if has_profile else None
+        activity_kcal = self.estimate_daily_activity_kcal(bmr, activity_level) if bmr else None
+        training_kcal = self.estimate_training_kcal()
+        target_calories = targets.get('calories')
+
+        week_weights = []
+        day_names = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
+
+        for date_str in dates:
+            try:
+                date_obj = datetime.datetime.strptime(date_str, '%Y-%m-%d')
+                day_key = day_names[date_obj.weekday()]
+            except ValueError:
+                continue
+
+            day_stats = self.get_day_completion_stats_internal(date_str, week_number)
+            if not day_stats.get('is_rest_day') and day_stats.get('total', 0) > 0:
+                training_days_planned += 1
+                if day_stats.get('percentage', 0) >= 80:
+                    training_days_completed += 1
+
+            day_log = daily_logs.get(date_str, {}).get('total', {})
+            day_calories = day_log.get('calories', 0)
+            if day_calories > 0:
+                calorie_days += 1
+                total_calories += day_calories
+
+            if has_profile and day_calories > 0:
+                is_training_day = (
+                    not day_stats.get('is_rest_day')
+                    and day_stats.get('total', 0) > 0
+                )
+                estimated_burn = bmr + activity_kcal + (training_kcal if is_training_day else 0)
+                total_balance += day_calories - estimated_burn
+                balance_days += 1
+
+            if date_str in weight_log:
+                week_weights.append((date_str, weight_log[date_str]))
+
+        avg_calories = total_calories / calorie_days if calorie_days else None
+        avg_balance = total_balance / balance_days if balance_days else None
+
+        weight_start = week_weights[0][1] if week_weights else None
+        weight_end = week_weights[-1][1] if week_weights else profile.get('weight')
+        weight_delta = None
+        if weight_start is not None and weight_end is not None:
+            weight_delta = round(weight_end - weight_start, 1)
+
+        trend = "Sin datos suficientes"
+        goal = profile.get('goal', 'maintain')
+        if weight_delta is not None:
+            if goal == 'cut' and weight_delta < -0.1:
+                trend = "Pérdida de peso consistente"
+            elif goal == 'cut' and weight_delta > 0.1:
+                trend = "Tendencia al alza — revisa ingesta o adherencia"
+            elif goal == 'bulk' and weight_delta > 0.1:
+                trend = "Ganancia de peso progresiva"
+            elif goal == 'bulk' and weight_delta < -0.1:
+                trend = "Pérdida de peso — posible déficit excesivo"
+            elif abs(weight_delta) <= 0.1:
+                trend = "Peso estable"
+            else:
+                trend = "Mantenimiento estable"
+
+        return {
+            'week_number': week_number,
+            'dates': dates,
+            'training_completed': training_days_completed,
+            'training_planned': training_days_planned,
+            'avg_calories': avg_calories,
+            'calorie_days': calorie_days,
+            'avg_balance': avg_balance,
+            'balance_days': balance_days,
+            'weight_start': weight_start,
+            'weight_end': weight_end,
+            'weight_delta': weight_delta,
+            'trend': trend,
+            'has_profile': has_profile,
+            'target_calories': target_calories,
+            'estimated_bmr': round(bmr) if bmr else None,
+            'estimated_activity_kcal': round(activity_kcal) if activity_kcal else None,
+            'estimated_training_kcal': round(training_kcal),
+        }
 
     def load_config(self) -> Dict[str, Any]:
         """Cargar configuración desde config.json"""

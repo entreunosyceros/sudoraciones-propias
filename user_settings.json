@@ -1,0 +1,11 @@
+{
+  "available_equipment": {
+    "mancuernas": true,
+    "barra": true,
+    "banco": true,
+    "suelo": true,
+    "bicicleta": true,
+    "paralelas": true
+  },
+  "last_updated": "2026-06-13 16:25:21"
+}

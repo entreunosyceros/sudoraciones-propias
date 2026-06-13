@@ -1,7 +1,7 @@
 {
   "profile": {
-    "age": 43,
-    "weight": 115.0,
+    "age": 44,
+    "weight": 110.0,
     "height": 190,
     "sex": "M",
     "activity_level": "moderate",
@@ -23,5 +23,8 @@
         "fat_g": 0.0
       }
     }
+  },
+  "weight_log": {
+    "2026-06-13": 110.0
   }
 }

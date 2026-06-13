@@ -274,6 +274,10 @@ class ModernHeavyDutyTrainer:
             
             st.markdown("---")
             
+            self.base_trainer.render_equipment_settings()
+            
+            st.markdown("---")
+            
             # Opciones de vista
             st.markdown("### 📊 Opciones de Vista")
             show_videos = st.checkbox("🎥 Mostrar videos", value=True)
@@ -478,7 +482,7 @@ class ModernHeavyDutyTrainer:
             # Pie de página
             st.markdown("---")
             st.markdown(
-                "💪 **Sudoraciones Propias v1.2.8** - Sistema de Entrenamiento con Mapeo Calendario  \n"
+                "💪 **Sudoraciones Propias v1.4.0** - Sistema de Entrenamiento con Mapeo Calendario  \n"
                 "🚀 Desarrollado con ☕ Python & Streamlit  \n"
                 "📅 **Nuevo**: Semanas de entrenamiento sincronizadas con fechas reales  \n"
                 "**Creado por entreunosyceros**",

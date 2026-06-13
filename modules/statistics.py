@@ -258,6 +258,44 @@ class StatisticsModule(BaseTrainer):
 
         st.markdown("---")
         
+        # Indicadores semanales de coherencia
+        st.subheader("🎯 Coherencia Semanal")
+        st.caption(
+            "Cruza entrenamiento, nutrición y peso para evaluar si avanzas hacia tu objetivo. "
+            "Todos los valores energéticos son estimaciones."
+        )
+        current_week_real = self.get_auto_detected_week()
+        summary = self.get_weekly_coherence_summary(current_week_real)
+
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            if summary['training_planned']:
+                st.metric("Entrenamientos", f"{summary['training_completed']}/{summary['training_planned']}")
+            else:
+                st.metric("Entrenamientos", "—")
+        with c2:
+            avg_cal = summary['avg_calories']
+            st.metric("Calorías medias", f"{avg_cal:.0f} kcal" if avg_cal else "—")
+        with c3:
+            avg_bal = summary['avg_balance']
+            if avg_bal is not None:
+                sign = "+" if avg_bal > 0 else ""
+                st.metric("Balance medio est.", f"{sign}{avg_bal:.0f} kcal/d")
+            else:
+                st.metric("Balance medio est.", "—")
+        with c4:
+            if summary['weight_start'] and summary['weight_end']:
+                st.metric("Peso", f"{summary['weight_start']:.1f}→{summary['weight_end']:.1f} kg")
+            elif summary['weight_end']:
+                st.metric("Peso", f"{summary['weight_end']:.1f} kg")
+            else:
+                st.metric("Peso", "—")
+
+        st.info(f"**Semana {summary['week_number']} — Tendencia:** {summary['trend']}")
+        st.caption("Más detalle en 🍎 Nutrición → Indicadores Semanales")
+
+        st.markdown("---")
+        
         # Análisis de completado vs disponible por grupo
         exercise_counts = {}
         completed_counts = {}
