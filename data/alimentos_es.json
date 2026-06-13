@@ -3,6 +3,7 @@
     {"nombre": "pechuga de pollo", "aliases": ["pollo", "pechuga pollo", "pollo a la plancha", "pollo plancha"], "por_100g": {"calorias": 165, "proteinas_g": 31, "carbohidratos_g": 0, "grasas_g": 3.6}, "racion_tipica_g": 150},
     {"nombre": "muslo de pollo", "aliases": ["muslo pollo", "contramuslo"], "por_100g": {"calorias": 209, "proteinas_g": 26, "carbohidratos_g": 0, "grasas_g": 11}, "racion_tipica_g": 120},
     {"nombre": "huevo", "aliases": ["huevos", "huevo frito", "huevo cocido", "tortilla francesa"], "por_100g": {"calorias": 155, "proteinas_g": 13, "carbohidratos_g": 1.1, "grasas_g": 11}, "racion_tipica_g": 60},
+    {"nombre": "clara de huevo", "aliases": ["clara", "claras", "claras de huevo", "clara de huevo líquida", "albúmina"], "por_100g": {"calorias": 52, "proteinas_g": 11, "carbohidratos_g": 0.7, "grasas_g": 0.2}, "racion_tipica_g": 33},
     {"nombre": "atún en lata", "aliases": ["atun", "atún natural", "atun al natural", "atún en aceite"], "por_100g": {"calorias": 116, "proteinas_g": 26, "carbohidratos_g": 0, "grasas_g": 1}, "racion_tipica_g": 80},
     {"nombre": "bonito del norte en lata", "aliases": ["bonito del norte", "bonito en lata", "bonito escabeche"], "por_100g": {"calorias": 145, "proteinas_g": 24, "carbohidratos_g": 0, "grasas_g": 5}, "racion_tipica_g": 80},
     {"nombre": "salmón", "aliases": ["salmon", "salmon a la plancha"], "por_100g": {"calorias": 208, "proteinas_g": 20, "carbohidratos_g": 0, "grasas_g": 13}, "racion_tipica_g": 150},

@@ -67,17 +67,20 @@ class ResultadoEstimacion:
         }
 
 
+from .paths import app_path
+
+
 class EstimadorAlimentos:
     """Estima macros a partir de texto libre en español."""
 
-    RUTA_BD = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'alimentos_es.json')
+    RUTA_BD = app_path('data', 'alimentos_es.json')
 
     PATRON_GRAMOS = re.compile(
         r'(\d+(?:[.,]\d+)?)\s*(?:g|gr|gramos?)\b',
         re.IGNORECASE,
     )
     PATRON_UNIDADES = re.compile(
-        r'(\d+(?:[.,]\d+)?)\s*(?:unidad(?:es)?|ud?s?|huevos?|rebanadas?|lonchas?|cucharadas?)\b',
+        r'(\d+(?:[.,]\d+)?)\s*(?:unidad(?:es)?|ud?s?|claras?|huevos?|rebanadas?|lonchas?|cucharadas?)\b',
         re.IGNORECASE,
     )
     PATRON_LATAS = re.compile(
@@ -100,6 +103,7 @@ class EstimadorAlimentos:
         'aceite de oliva': 10,
     }
     GRAMOS_POR_LATA = 330  # 33 cl
+    GRAMOS_POR_CLARA = 33
 
     def __init__(self, usar_open_food_facts: bool = True):
         self.usar_open_food_facts = usar_open_food_facts
@@ -246,7 +250,9 @@ class EstimadorAlimentos:
             nombre = re.sub(r'^(?:de\s+)', '', nombre, flags=re.IGNORECASE)
 
             if not nombre.strip():
-                if 'huevo' in unidad_texto:
+                if 'clara' in unidad_texto:
+                    nombre = 'clara de huevo'
+                elif 'huevo' in unidad_texto:
                     nombre = 'huevo'
                 elif 'rebanada' in unidad_texto or 'loncha' in unidad_texto:
                     nombre = 'pan integral'
@@ -256,8 +262,12 @@ class EstimadorAlimentos:
                     nombre = segmento
             elif 'cucharada' in unidad_texto:
                 nombre = self._inferir_alimento_cucharada(nombre, segmento)
+            elif 'clara' in unidad_texto:
+                nombre = 'clara de huevo'
 
-            if 'huevo' in unidad_texto:
+            if 'clara' in unidad_texto:
+                gramos = cantidad * self.GRAMOS_POR_CLARA
+            elif 'huevo' in unidad_texto:
                 gramos = cantidad * 60
             elif 'rebanada' in unidad_texto or 'loncha' in unidad_texto:
                 gramos = cantidad * 40

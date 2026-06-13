@@ -10,11 +10,20 @@ import shutil
 from typing import Dict, List, Any
 import streamlit as st
 
+from .paths import (
+    CONFIG_FILE,
+    NUTRITION_FILE,
+    PROGRESS_BACKUP_FILE,
+    PROGRESS_FILE,
+    USER_SETTINGS_FILE,
+    app_path,
+)
+
 
 class BaseTrainer:
     """Clase base con funcionalidad core del sistema"""
 
-    USER_SETTINGS_FILE = 'user_settings.json'
+    USER_SETTINGS_FILE = USER_SETTINGS_FILE
 
     DEFAULT_USER_EQUIPMENT = {
         'mancuernas': True,
@@ -484,7 +493,7 @@ class BaseTrainer:
 
     def load_nutrition_data(self) -> Dict[str, Any]:
         """Cargar datos de nutrición (lectura compartida entre módulos)"""
-        nutrition_file = 'nutrition_data.json'
+        nutrition_file = NUTRITION_FILE
         if os.path.exists(nutrition_file):
             try:
                 with open(nutrition_file, 'r', encoding='utf-8') as f:
@@ -634,10 +643,10 @@ class BaseTrainer:
     def load_config(self) -> Dict[str, Any]:
         """Cargar configuración desde config.json"""
         try:
-            with open('config.json', 'r', encoding='utf-8') as f:
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except FileNotFoundError:
-            st.error("❌ Archivo config.json no encontrado")
+            st.error(f"❌ Archivo config.json no encontrado en: {CONFIG_FILE}")
             return {}
         except json.JSONDecodeError:
             st.error("❌ Error al leer config.json")
@@ -645,9 +654,9 @@ class BaseTrainer:
 
     def load_progress_data(self) -> Dict[str, Any]:
         """Cargar datos de progreso"""
-        if os.path.exists('progress_data.json'):
+        if os.path.exists(PROGRESS_FILE):
             try:
-                with open('progress_data.json', 'r', encoding='utf-8') as f:
+                with open(PROGRESS_FILE, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                 # Migrar datos antiguos que no tienen exercise_weeks
                 self.migrate_progress_data(data)
@@ -655,10 +664,10 @@ class BaseTrainer:
             except Exception as e:
                 st.warning(f"Error cargando progress_data.json: {e}")
                 # Crear archivo de backup
-                backup_name = f"progress_data_backup_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                backup_name = app_path(f"progress_data_backup_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
                 try:
                     import shutil
-                    shutil.copy('progress_data.json', backup_name)
+                    shutil.copy(PROGRESS_FILE, backup_name)
                     st.info(f"Backup creado: {backup_name}")
                 except:
                     pass
@@ -674,7 +683,7 @@ class BaseTrainer:
         }
         
         # Crear archivo inicial si no existe
-        if not os.path.exists('progress_data.json'):
+        if not os.path.exists(PROGRESS_FILE):
             self.save_progress_data_internal(default_data)
         
         return default_data
@@ -898,7 +907,8 @@ class BaseTrainer:
 
     def save_progress_data_internal(self, data: Dict[str, Any]):
         """Método interno para guardar datos específicos (usado en migración)"""
-        with open('progress_data.json', 'w', encoding='utf-8') as f:
+        os.makedirs(os.path.dirname(PROGRESS_FILE), exist_ok=True)
+        with open(PROGRESS_FILE, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
     def get_exercise_completion_count(self, muscle_group: str, exercise_name: str) -> int:
@@ -958,20 +968,20 @@ class BaseTrainer:
         
         try:
             # Crear backup antes de guardar
-            if os.path.exists('progress_data.json'):
-                shutil.copy('progress_data.json', 'progress_data_backup.json')
+            if os.path.exists(PROGRESS_FILE):
+                shutil.copy(PROGRESS_FILE, PROGRESS_BACKUP_FILE)
             
-            with open('progress_data.json', 'w', encoding='utf-8') as f:
+            with open(PROGRESS_FILE, 'w', encoding='utf-8') as f:
                 json.dump(self.progress_data, f, indent=2, ensure_ascii=False)
             
             # Verificar que se guardó correctamente
-            if os.path.exists('progress_data.json'):
-                file_size = os.path.getsize('progress_data.json')
+            if os.path.exists(PROGRESS_FILE):
+                file_size = os.path.getsize(PROGRESS_FILE)
                 if file_size < 50:  # Archivo muy pequeño, posible error
                     st.error(f"⚠️ Advertencia: progress_data.json parece estar corrupto (tamaño: {file_size} bytes)")
                     # Restaurar backup si existe
-                    if os.path.exists('progress_data_backup.json'):
-                        shutil.copy('progress_data_backup.json', 'progress_data.json')
+                    if os.path.exists(PROGRESS_BACKUP_FILE):
+                        shutil.copy(PROGRESS_BACKUP_FILE, PROGRESS_FILE)
             
             # Forzar recarga en streamlit
             if hasattr(st, 'cache_data'):
@@ -980,8 +990,8 @@ class BaseTrainer:
         except Exception as e:
             st.error(f"❌ Error guardando progress_data.json: {e}")
             # Restaurar backup si existe
-            if os.path.exists('progress_data_backup.json'):
-                shutil.copy('progress_data_backup.json', 'progress_data.json')
+            if os.path.exists(PROGRESS_BACKUP_FILE):
+                shutil.copy(PROGRESS_BACKUP_FILE, PROGRESS_FILE)
 
     def reload_progress_data(self):
         """Recargar datos de progreso desde archivo"""
@@ -1402,7 +1412,7 @@ class BaseTrainer:
                 st.error("Ejercicio no encontrado en la configuración")
                 return False
             # Guardar en disco
-            with open('config.json', 'w', encoding='utf-8') as f:
+            with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
                 json.dump(self.config, f, indent=2, ensure_ascii=False)
             # Limpiar cache para reflejar cambios
             if hasattr(st, 'cache_data'):

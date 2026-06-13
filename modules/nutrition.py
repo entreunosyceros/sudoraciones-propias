@@ -9,6 +9,7 @@ import datetime
 from typing import Dict, Any, List
 from .base_trainer import BaseTrainer
 from .estimador_alimentos import EstimadorAlimentos
+from .paths import NUTRITION_FILE
 
 
 class NutritionModule(BaseTrainer):
@@ -16,7 +17,7 @@ class NutritionModule(BaseTrainer):
     
     def __init__(self):
         super().__init__()
-        self.nutrition_file = 'nutrition_data.json'
+        self.nutrition_file = NUTRITION_FILE
         self.nutrition_data = self.load_nutrition_data()
         self.estimador_alimentos = EstimadorAlimentos(usar_open_food_facts=True)
     

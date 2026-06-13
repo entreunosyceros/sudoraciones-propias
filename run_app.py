@@ -11,6 +11,13 @@ import time
 import venv
 from pathlib import Path
 
+APP_ROOT = Path(__file__).resolve().parent
+os.chdir(APP_ROOT)
+if str(APP_ROOT) not in sys.path:
+    sys.path.insert(0, str(APP_ROOT))
+
+from modules.paths import CONFIG_FILE, PROGRESS_FILE, app_path
+
 # Suprimir warnings molestos del navegador/TensorFlow
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['PYTHONWARNINGS'] = 'ignore'
@@ -25,7 +32,7 @@ os.environ['GOOGLE_DEFAULT_CLIENT_CONFIG'] = 'never'
 
 def get_venv_path():
     """Obtener la ruta del entorno virtual"""
-    return Path.cwd() / "venv_sudoraciones"
+    return APP_ROOT / "venv_sudoraciones"
 
 def get_venv_python():
     """Obtener la ruta del Python del entorno virtual"""
@@ -106,7 +113,7 @@ def get_total_exercises_count():
     """Calcular el número total de ejercicios desde config.json"""
     try:
         import json
-        with open('config.json', 'r', encoding='utf-8') as f:
+        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
             config = json.load(f)
         
         total = 0
@@ -190,9 +197,9 @@ def check_files():
     print("📁 Verificando archivos...")
     
     required_files = [
-        'main_app.py',  # Aplicación modular principal
-        'config.json', 
-        'requirements.txt'
+        app_path('main_app.py'),
+        CONFIG_FILE,
+        app_path('requirements.txt'),
     ]
     
     # Verificar archivos obligatorios
@@ -205,8 +212,8 @@ def check_files():
             return False
     
     # Verificar/crear progress_data.json
-    if os.path.exists('progress_data.json'):
-        size = os.path.getsize('progress_data.json')
+    if os.path.exists(PROGRESS_FILE):
+        size = os.path.getsize(PROGRESS_FILE)
         print(f"  ✅ progress_data.json ({size} bytes)")
     else:
         print("  ⚠️  progress_data.json no encontrado, creando archivo inicial...")
@@ -216,7 +223,7 @@ def check_files():
                 "completed_exercises": [],
                 "exercise_weeks": {}
             }
-            with open('progress_data.json', 'w', encoding='utf-8') as f:
+            with open(PROGRESS_FILE, 'w', encoding='utf-8') as f:
                 json.dump(initial_data, f, indent=2, ensure_ascii=False)
             print("  ✅ progress_data.json creado exitosamente")
         except Exception as e:
@@ -264,8 +271,8 @@ def kill_existing_streamlit():
 
 def get_app_file():
     """Obtener el archivo de la aplicación modular"""
-    if os.path.exists("main_app.py"):
-        return "main_app.py"
+    if os.path.exists(app_path('main_app.py')):
+        return app_path('main_app.py')
     else:
         print("❌ main_app.py no encontrado.")
         return None

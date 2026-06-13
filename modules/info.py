@@ -6,6 +6,7 @@ import json
 import os
 import streamlit as st
 from .base_trainer import BaseTrainer
+from .paths import LOGO_FILE, app_path
 
 
 class InfoModule(BaseTrainer):
@@ -62,7 +63,7 @@ class InfoModule(BaseTrainer):
 
     def _get_food_database_count(self) -> int:
         """Contar alimentos en la base local"""
-        ruta = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'alimentos_es.json')
+        ruta = app_path('data', 'alimentos_es.json')
         if not os.path.exists(ruta):
             return 0
         try:
@@ -169,8 +170,8 @@ class InfoModule(BaseTrainer):
     def render_info_tab(self):
         """Renderizar pestaña de información"""
         # Logo al principio de la pestaña
-        if os.path.exists("img/logo.png"):
-            st.image("img/logo.png", width=200)
+        if os.path.exists(LOGO_FILE):
+            st.image(LOGO_FILE, width=200)
         
         st.header("ℹ️ Información del Programa")
         

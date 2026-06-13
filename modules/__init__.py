@@ -3,20 +3,12 @@ Módulos del Sistema de Entrenamiento
 Sistema modular organizado por pestañas
 """
 
-from .base_trainer import BaseTrainer
-from .training_plan import TrainingPlanModule
-from .progress_calendar import ProgressModule
-from .statistics import StatisticsModule
-from .info import InfoModule
-from .exercise_library import ExerciseLibraryModule
-from .nutrition import NutritionModule
-
 __all__ = [
     'BaseTrainer',
-    'TrainingPlanModule', 
+    'TrainingPlanModule',
     'ProgressModule',
     'StatisticsModule',
     'InfoModule',
     'ExerciseLibraryModule',
-    'NutritionModule'
+    'NutritionModule',
 ]

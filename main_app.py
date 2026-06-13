@@ -2,8 +2,17 @@
 Sudoraciones Propias - Aplicación Principal
 Sistema de entrenamiento modularizado por pestañas con mapeo calendario
 """
-import streamlit as st
 import os
+import sys
+from pathlib import Path
+
+_APP_ROOT = Path(__file__).resolve().parent
+os.chdir(_APP_ROOT)
+if str(_APP_ROOT) not in sys.path:
+    sys.path.insert(0, str(_APP_ROOT))
+os.environ.setdefault('SUDORACIONES_APP_ROOT', str(_APP_ROOT))
+
+import streamlit as st
 
 # Configuración inicial de Streamlit
 st.set_page_config(
