@@ -13,6 +13,11 @@ class TrainingPlanModule(BaseTrainer):
 
     def get_day_completion_stats(self, date_str: str, week_number: int) -> Dict[str, Any]:
         """Obtener estadísticas de finalización para un día específico"""
+        if self.is_future_date(date_str):
+            return self.get_pending_day_stats(is_future=True)
+        if self.is_before_program_start(date_str):
+            return self.get_pending_day_stats()
+
         # Obtener plan del día
         week_info = self.get_week_info(week_number)
         
@@ -46,16 +51,7 @@ class TrainingPlanModule(BaseTrainer):
                     exercise_id = f"{muscle_group}_{exercise['name']}_{day_key}_week{week_number}"
                     is_completed = self.is_exercise_completed(date_str, exercise_id, week_number)
                     
-                    # Progresión dinámica general
-                    display_sets = exercise.get('sets', 1)
-                    base_reps = exercise.get('reps', '')
-                    level = self.get_week_info(week_number).get('level', 1)
-                    
-                    if exercise.get('category') == 'forearm':
-                        s, r = self.get_forearm_progression(level)
-                        display_sets, display_reps = s, r
-                    else:
-                        display_reps = self.get_general_progression(level, str(base_reps))
+                    display_sets, display_reps = self.get_exercise_progression(exercise, week_number)
                     
                     exercise_list.append({
                         'name': exercise['name'],
@@ -145,39 +141,30 @@ class TrainingPlanModule(BaseTrainer):
 
     def get_week_number_for_date(self, date_str: str) -> int:
         """Determinar qué número de semana corresponde a una fecha específica"""
-        # Primero, verificar si tenemos la semana guardada explícitamente
+        if self.is_future_date(date_str):
+            return self.get_program_week_for_date(date_str)
+
         if 'exercise_weeks' in self.progress_data and date_str in self.progress_data['exercise_weeks']:
             return self.progress_data['exercise_weeks'][date_str]
         
-        # Si la fecha tiene ejercicios registrados, intentar determinar la semana basándose en los IDs de ejercicios
         if 'completed_exercises' in self.progress_data and date_str in self.progress_data['completed_exercises']:
             exercise_ids = list(self.progress_data['completed_exercises'][date_str].keys())
             if exercise_ids:
-                # Extraer número de semana de los IDs que tienen formato _weekN
+                from collections import Counter
                 week_numbers = []
                 for exercise_id in exercise_ids:
                     if '_week' in exercise_id:
                         try:
                             week_part = exercise_id.split('_week')[-1]
-                            week_num = int(week_part)
+                            week_num = int(''.join(ch for ch in week_part if ch.isdigit()))
                             week_numbers.append(week_num)
                         except (ValueError, IndexError):
                             continue
                 
                 if week_numbers:
-                    # Usar la semana más común en los ejercicios de esa fecha
-                    from collections import Counter
-                    most_common_week = Counter(week_numbers).most_common(1)[0][0]
-                    
-                    # Guardar esta información para futura referencia
-                    if 'exercise_weeks' not in self.progress_data:
-                        self.progress_data['exercise_weeks'] = {}
-                    self.progress_data['exercise_weeks'][date_str] = most_common_week
-                    self.save_progress_data()
-                    return most_common_week
+                    return Counter(week_numbers).most_common(1)[0][0]
         
-        # Fallback: usar la semana actual
-        return st.session_state.get('current_week', 1)
+        return self.get_program_week_for_date(date_str)
 
     def update_completed_workouts(self):
         """Actualizar lista de entrenamientos completados basándose en ejercicios"""
@@ -470,16 +457,8 @@ class TrainingPlanModule(BaseTrainer):
                     st.info(f"📋 {exercise_name} marcado como pendiente ({day_date})")
                 st.rerun()
         
-        # Mostrar estado y progresión dinámica
-        display_sets = exercise.get('sets', 1)
-        base_reps = exercise.get('reps', '')
-        level = self.get_week_info(current_week).get('level', 1)
-        
-        if exercise.get('category') == 'forearm':
-            s, r = self.get_forearm_progression(level)
-            display_sets, display_reps = s, r
-        else:
-            display_reps = self.get_general_progression(level, str(base_reps))
+        # Progresión dinámica según semana del programa
+        display_sets, display_reps = self.get_exercise_progression(exercise, current_week)
         
         with col_title:
             # Mostrar estado visual del ejercicio

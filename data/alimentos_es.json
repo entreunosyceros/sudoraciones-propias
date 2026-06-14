@@ -144,6 +144,10 @@
     {"nombre": "tónica", "aliases": ["tonica", "agua tónica", "agua tonica", "schweppes", "tónica limón", "tonica limon"], "por_100g": {"calorias": 37, "proteinas_g": 0, "carbohidratos_g": 9, "grasas_g": 0}, "racion_tipica_g": 330},
     {"nombre": "batido de frutas", "aliases": ["batido frutas", "smoothie", "batido natural", "batido de plátano", "batido de fresa"], "por_100g": {"calorias": 72, "proteinas_g": 1.2, "carbohidratos_g": 15, "grasas_g": 0.8}, "racion_tipica_g": 300},
     {"nombre": "sidra natural", "aliases": ["sidra", "culín sidra"], "por_100g": {"calorias": 50, "proteinas_g": 0.1, "carbohidratos_g": 3.5, "grasas_g": 0}, "racion_tipica_g": 200},
+    {"nombre": "cerveza", "aliases": ["cerbeza", "caña de cerveza", "caña", "birra", "cerveza rubia", "cerveza lager", "lata cerveza", "botellín cerveza"], "por_100g": {"calorias": 43, "proteinas_g": 0.5, "carbohidratos_g": 3.6, "grasas_g": 0}, "racion_tipica_g": 200},
+    {"nombre": "shandy", "aliases": ["radler", "clara con limón", "cerveza con limón", "shandy limón", "lemon beer"], "por_100g": {"calorias": 40, "proteinas_g": 0.3, "carbohidratos_g": 5, "grasas_g": 0}, "racion_tipica_g": 330},
+    {"nombre": "caña de crema", "aliases": ["caña crema", "cerveza de crema", "cerveza negra cremosa", "stout", "guinness", "cerveza con crema"], "por_100g": {"calorias": 48, "proteinas_g": 0.5, "carbohidratos_g": 4, "grasas_g": 0}, "racion_tipica_g": 200},
+    {"nombre": "vino", "aliases": ["vino tinto", "vino blanco", "vino rosado", "copa de vino", "tinto", "blanco", "rosado", "vino de mesa"], "por_100g": {"calorias": 85, "proteinas_g": 0.1, "carbohidratos_g": 2.6, "grasas_g": 0}, "racion_tipica_g": 100},
     {"nombre": "batido proteínas", "aliases": ["batido proteina", "shake proteina", "whey"], "por_100g": {"calorias": 400, "proteinas_g": 80, "carbohidratos_g": 8, "grasas_g": 5}, "racion_tipica_g": 30},
     {"nombre": "tofu", "aliases": ["tofu firme"], "por_100g": {"calorias": 76, "proteinas_g": 8, "carbohidratos_g": 1.9, "grasas_g": 4.8}, "racion_tipica_g": 150}
   ]

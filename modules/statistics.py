@@ -501,18 +501,21 @@ class StatisticsModule(BaseTrainer):
         
         # Tabla de ejercicios completa
         st.subheader("📋 Lista Completa de Ejercicios")
+        current_week = st.session_state.get('current_week', 1)
+        st.caption(f"Series y repeticiones mostradas según la **Semana {current_week}** del programa (progresión automática).")
         
         all_exercises = []
         for muscle_group, exercises in self.config.get('exercises', {}).items():
             for exercise in exercises:
                 # Usar la nueva función mejorada para contar completados
                 completed_count = self.get_exercise_completion_count(muscle_group, exercise['name'])
+                display_sets, display_reps = self.get_exercise_progression(exercise, current_week)
                 
                 all_exercises.append({
                     'Grupo': self.translate_muscle_group(muscle_group),
                     'Ejercicio': exercise['name'],
-                    'Series': exercise['sets'],
-                    'Repeticiones': exercise['reps'],
+                    'Series': display_sets,
+                    'Repeticiones': display_reps,
                     'Video': '✅' if exercise.get('youtube_url') else '❌',
                     'Veces Completado': completed_count
                 })

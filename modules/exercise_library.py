@@ -36,6 +36,9 @@ class ExerciseLibraryModule(BaseTrainer):
     
     def render_exercise_card(self, exercise: Dict[str, Any], category: str):
         """Renderizar tarjeta de ejercicio individual"""
+        current_week = st.session_state.get('current_week', 1)
+        display_sets, display_reps = self.get_exercise_progression(exercise, current_week)
+
         with st.expander(f"📋 {exercise['name']}", expanded=False):
             col1, col2 = st.columns([2, 1])
             
@@ -44,8 +47,10 @@ class ExerciseLibraryModule(BaseTrainer):
                 st.write(exercise.get('description', 'No disponible'))
                 
                 st.markdown(f"**📊 Información:**")
-                st.write(f"• Series: {exercise.get('sets', 1)}")
-                st.write(f"• Repeticiones: {exercise.get('reps', '')}")
+                st.write(f"• Series: {display_sets}")
+                st.write(f"• Repeticiones: {display_reps}")
+                if display_reps != exercise.get('reps', '') or display_sets != exercise.get('sets', 1):
+                    st.caption(f"Valores base: {exercise.get('sets', 1)} × {exercise.get('reps', '')} · Semana {current_week}")
                 st.write(f"• Equipo: {exercise.get('equipment', 'No especificado')}")
                 
                 # Nivel de dificultad

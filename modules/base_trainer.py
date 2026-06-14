@@ -52,6 +52,8 @@ class BaseTrainer:
     }
 
     ESTIMATED_TRAINING_KCAL_PER_SESSION = 320
+    MAX_EXERCISES_PER_MUSCLE_GROUP = 6
+    DAY_KEYS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
     
     def __init__(self):
         """Inicializar la aplicación"""
@@ -156,8 +158,12 @@ class BaseTrainer:
         if current_week >= 20:
             return False
             
-        # Calcular completado de la semana actual
-        completion_stats = self.get_week_completion_stats()
+        # Calcular completado de la semana actual (fechas del programa, no rolling 7 días)
+        from .training_plan import TrainingPlanModule
+        tp = TrainingPlanModule()
+        tp.config = self.config
+        tp.progress_data = self.progress_data
+        completion_stats = tp.get_week_completion_stats(current_week)
         
         # Si está 100% completada, avanzar automáticamente
         if completion_stats['percentage'] >= 100:
@@ -172,40 +178,13 @@ class BaseTrainer:
         return False
     
     def get_week_completion_stats(self) -> Dict[str, Any]:
-        """Obtener estadísticas de completado de la semana actual"""
+        """Obtener estadísticas de completado de la semana actual del programa."""
         current_week = st.session_state.get('current_week', 1)
-        
-        # Obtener últimos 7 días
-        today = datetime.datetime.now()
-        week_start = today - datetime.timedelta(days=6)
-        
-        total_planned = 0
-        total_completed = 0
-        
-        for i in range(7):
-            check_date = week_start + datetime.timedelta(days=i)
-            date_str = check_date.strftime('%Y-%m-%d')
-            
-            # Obtener ejercicios de esa fecha para la semana actual
-            if date_str in self.progress_data.get('completed_exercises', {}):
-                day_exercises = self.progress_data['completed_exercises'][date_str]
-                week_suffix = f"_week{current_week}"
-                
-                # Filtrar solo ejercicios de la semana actual
-                week_exercises = {k: v for k, v in day_exercises.items() if k.endswith(week_suffix)}
-                
-                if week_exercises:
-                    total_planned += len(week_exercises)
-                    total_completed += sum(1 for completed in week_exercises.values() if completed)
-        
-        percentage = (total_completed / total_planned * 100) if total_planned > 0 else 0
-        
-        return {
-            'total_planned': total_planned,
-            'total_completed': total_completed,
-            'percentage': percentage,
-            'week': current_week
-        }
+        from .training_plan import TrainingPlanModule
+        tp = TrainingPlanModule()
+        tp.config = self.config
+        tp.progress_data = self.progress_data
+        return tp.get_week_completion_stats(current_week)
     
     # --- NUEVO: Utilidades para alternar antebrazos y progresión por nivel ---
     def _get_forearm_exercises(self) -> list[dict]:
@@ -226,48 +205,236 @@ class BaseTrainer:
         info = self.get_week_info(week_number)
         return info.get('level', 1)
     
-    def get_forearm_progression(self, level: int) -> tuple[int, str]:
-        """Progresión para antebrazos según nivel"""
+    def _parse_rep_range_bounds(self, reps: str) -> tuple[int | None, int | None]:
+        """Extraer límite inferior y superior numérico de un string de repeticiones."""
+        if '(7+7+7)' in reps or 'segundo' in reps.lower() or 'km' in reps.lower():
+            return None, None
+
+        if '-' in reps:
+            parts = reps.split('-', 1)
+            try:
+                low = int(''.join(c for c in parts[0] if c.isdigit()))
+            except ValueError:
+                return None, None
+            max_num = ''.join(c for c in parts[1] if c.isdigit())
+            if not max_num:
+                return None, None
+            return low, int(max_num)
+
+        num = ''.join(c for c in reps if c.isdigit())
+        if not num:
+            return None, None
+        value = int(num)
+        return value, value
+
+    def _get_progression_rep_base(self, base_reps: str) -> str:
+        """Punto de partida en semana 1: 9-10 para rangos de fuerza habituales (tope ≤ 12 reps)."""
+        _, high = self._parse_rep_range_bounds(base_reps)
+        if high is not None and high <= 12:
+            return '9-10'
+        return base_reps
+
+    def _get_sets_for_program_level(self, level: int) -> int:
+        """Series por nivel del programa: 1→3, 2→4, 3→5, 4+→6."""
+        return {1: 3, 2: 4, 3: 5}.get(level, 6)
+
+    def _get_forearm_reps(self, level: int, week_in_cycle: int) -> str:
+        """Repeticiones de antebrazo según nivel (series las marca el nivel del programa)."""
         if level <= 1:
-            return 1, '8-10'
-        if level == 2:
-            return 1, '10-12'
-        if level == 3:
-            return 2, '10-12'
-        # nivel 4+
-        return 2, '12-15'
-    
+            base = '9-10'
+        elif level == 2:
+            base = '10-12'
+        elif level == 3:
+            base = '10-12'
+        else:
+            base = '12-15'
+        if level < 3:
+            return self._apply_rep_increment(base, week_in_cycle - 1)
+        return base
+
+    def _is_plank_exercise(self, name: str) -> bool:
+        return 'plancha' in name.lower()
+
+    def _is_cardio_km_exercise(self, exercise: dict, reps: str) -> bool:
+        reps_lower = reps.lower()
+        name_lower = exercise.get('name', '').lower()
+        return 'km' in reps_lower or 'bicicleta' in name_lower
+
+    def _parse_time_range_seconds(self, reps: str) -> tuple[int | None, int | None, str]:
+        """Parsear rangos temporales como '30-60 segundos' o '20-40 segundos por lado'."""
+        if not any(c.isdigit() for c in reps) or 'segundo' not in reps.lower():
+            return None, None, ''
+
+        if '-' in reps:
+            parts = reps.split('-', 1)
+            try:
+                min_s = int(''.join(c for c in parts[0] if c.isdigit()))
+            except ValueError:
+                return None, None, ''
+            max_part = parts[1].strip()
+            max_num = ''.join(c for c in max_part if c.isdigit())
+            if not max_num:
+                return None, None, ''
+            max_s = int(max_num)
+            suffix = max_part[len(max_num):].strip()
+            if suffix and not suffix.startswith(' '):
+                suffix = ' ' + suffix
+            return min_s, max_s, suffix
+
+        num = ''.join(c for c in reps if c.isdigit())
+        if not num:
+            return None, None, ''
+        value = int(num)
+        idx = reps.find(num)
+        suffix = reps[idx + len(num):].strip()
+        if suffix and not suffix.startswith(' '):
+            suffix = ' ' + suffix
+        elif not suffix:
+            suffix = ' segundos'
+        return value, value, suffix
+
+    def _format_time_range(self, min_s: int, max_s: int, suffix: str) -> str:
+        suffix = suffix or ' segundos'
+        if min_s == max_s:
+            return f"{min_s}{suffix}"
+        return f"{min_s}-{max_s}{suffix}"
+
+    def _progress_plank_time(self, original_reps: str, level: int) -> str:
+        """Planchas: +10 segundos por cada cambio de nivel del programa."""
+        min_s, max_s, suffix = self._parse_time_range_seconds(original_reps)
+        if min_s is None or max_s is None:
+            return original_reps
+        bonus = (level - 1) * 10
+        return self._format_time_range(min_s + bonus, max_s + bonus, suffix)
+
+    def _apply_rep_increment(self, original_reps: str, increment: int) -> str:
+        """Aplicar incremento numérico a repeticiones (rangos, unidades o sufijos)."""
+        if increment <= 0 or not any(c.isdigit() for c in original_reps):
+            return original_reps
+
+        if '(7+7+7)' in original_reps:
+            return original_reps
+
+        try:
+            if '-' in original_reps:
+                parts = original_reps.split('-', 1)
+                min_reps = int(parts[0].strip())
+                max_reps_part = parts[1].strip()
+                suffix = ''
+
+                if ' ' in max_reps_part:
+                    max_reps_num_str = max_reps_part.split(' ')[0]
+                    suffix = ' ' + ' '.join(max_reps_part.split(' ')[1:])
+                    max_reps = int(max_reps_num_str)
+                else:
+                    max_reps = int(max_reps_part)
+
+                return f"{min_reps + increment}-{max_reps + increment}{suffix}"
+
+            reps_part = original_reps.strip()
+            suffix = ''
+
+            if ' ' in reps_part:
+                reps_num_str = reps_part.split(' ')[0]
+                suffix = ' ' + ' '.join(reps_part.split(' ')[1:])
+                reps = int(reps_num_str)
+            else:
+                reps_num_str = ''
+                for char in reps_part:
+                    if char.isdigit():
+                        reps_num_str += char
+                    else:
+                        suffix += char
+                if not reps_num_str:
+                    return original_reps
+                reps = int(reps_num_str)
+
+            return f"{reps + increment}{suffix}"
+        except (ValueError, IndexError):
+            return original_reps
+
+    def get_exercise_progression(self, exercise: dict, week_number: int) -> tuple[int, str]:
+        """Calcular series y repeticiones/tiempo progresivos para un ejercicio y semana del programa."""
+        week_info = self.get_week_info(week_number)
+        level = week_info['level']
+        week_in_cycle = week_info['week_in_cycle']
+
+        base_reps = str(exercise.get('reps', ''))
+        name = exercise.get('name', '')
+        category = exercise.get('category', '')
+        display_sets = self._get_sets_for_program_level(level)
+
+        if self._is_cardio_km_exercise(exercise, base_reps):
+            return 1, '15km' if level <= 2 else '20km'
+
+        if category == 'forearm':
+            return display_sets, self._get_forearm_reps(level, week_in_cycle)
+
+        if self._is_plank_exercise(name):
+            return display_sets, self._progress_plank_time(base_reps, level)
+
+        if 'segundo' in base_reps.lower():
+            return display_sets, base_reps
+
+        progression_base = self._get_progression_rep_base(base_reps)
+        if level >= 3:
+            display_reps = progression_base
+        else:
+            week_bonus = week_in_cycle - 1
+            level_bonus = (level - 1) * 2
+            display_reps = self._apply_rep_increment(progression_base, week_bonus + level_bonus)
+        return display_sets, display_reps
+
+    def get_general_progression(self, level: int, original_reps: str, week_in_cycle: int = 1) -> str:
+        """Compatibilidad: progresión de reps sin contexto de ejercicio completo."""
+        if 'segundo' in original_reps.lower() or 'km' in original_reps.lower():
+            if self._parse_time_range_seconds(original_reps)[0] is not None:
+                return self._progress_plank_time(original_reps, level)
+            return original_reps
+        if level >= 3:
+            return self._get_progression_rep_base(original_reps)
+        week_bonus = week_in_cycle - 1
+        level_bonus = (level - 1) * 2
+        progression_base = self._get_progression_rep_base(original_reps)
+        return self._apply_rep_increment(progression_base, week_bonus + level_bonus)
+
     def get_planned_exercises_for_group(self, muscle_group: str, day_key: str, week_number: int) -> list[dict]:
-        """Devolver ejercicios planificados aplicando progresión por nivel, alternancia de antebrazos y calistenia como complemento"""
+        """Devolver ejercicios planificados con tope de 6 por sesión, rotación y calistenia como complemento"""
         all_ex = self.config.get('exercises', {}).get(muscle_group, [])
 
         if muscle_group == 'abs':
             all_ex = all_ex + self.config.get('exercises', {}).get('abs_avanzados', [])
-        
-        # Obtener el nivel actual basado en la semana
+
         current_level = (week_number - 1) // 4 + 1
-        
-        # Filtrar ejercicios por nivel de dificultad (incluye ejercicios del nivel actual y anteriores)
         available_exercises = self._filter_exercises_by_level(all_ex, current_level)
         available_exercises = self.filter_exercises_by_equipment(available_exercises)
         primary, calisthenics = self._split_primary_and_calisthenics(available_exercises)
-        
+
+        if muscle_group == 'cardio':
+            return primary
+
+        reserve_calisthenics = 1 if calisthenics else 0
+        max_total = self.MAX_EXERCISES_PER_MUSCLE_GROUP
+
         if muscle_group == 'brazos':
-            # En brazos: incluir todos los ejercicios principales, alternar antebrazos y añadir calistenia
             non_forearm = [e for e in primary if e.get('category') != 'forearm']
             forearm_exercises = [e for e in primary if e.get('category') == 'forearm']
-            chosen = self._choose_forearm_exercise_by_level(day_key, week_number, forearm_exercises)
-            result = non_forearm + ([chosen] if chosen else [])
-            return self._append_calisthenics_bonus(result, calisthenics, muscle_group, day_key, week_number)
-        
-        elif muscle_group == 'piernas':
-            return self._append_calisthenics_bonus(
-                self._get_planned_leg_exercises(day_key, week_number, primary),
-                calisthenics, muscle_group, day_key, week_number
+            chosen_forearm = self._choose_forearm_exercise_by_level(day_key, week_number, forearm_exercises)
+            reserve_forearm = 1 if chosen_forearm else 0
+            max_non_forearm = max_total - reserve_forearm - reserve_calisthenics
+            rotated = self._choose_rotating_exercises(
+                non_forearm, muscle_group, day_key, week_number, max_non_forearm
             )
-        
-        else:
-            return self._append_calisthenics_bonus(primary, calisthenics, muscle_group, day_key, week_number)
+            result = rotated + ([chosen_forearm] if chosen_forearm else [])
+            return self._append_calisthenics_bonus(
+                result, calisthenics, muscle_group, day_key, week_number, max_total=max_total
+            )
+
+        max_primary = max_total - reserve_calisthenics
+        rotated = self._choose_rotating_exercises(primary, muscle_group, day_key, week_number, max_primary)
+        return self._append_calisthenics_bonus(
+            rotated, calisthenics, muscle_group, day_key, week_number, max_total=max_total
+        )
     
     def _split_primary_and_calisthenics(self, exercises: list[dict]) -> tuple[list[dict], list[dict]]:
         """Separar ejercicios principales (peso/suelo) de complementos de calistenia en paralelas"""
@@ -282,19 +449,58 @@ class BaseTrainer:
 
         calisthenics = sorted(calisthenics, key=lambda x: x.get('difficulty_level', 1))
 
-        day_names = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
-        day_idx = day_names.index(day_key) if day_key in day_names else 0
+        day_idx = self.DAY_KEYS.index(day_key) if day_key in self.DAY_KEYS else 0
         group_offset = sum(ord(c) for c in muscle_group) % 7
         rotation_index = ((week_number - 1) * 7 + day_idx + group_offset) % len(calisthenics)
 
         return calisthenics[rotation_index]
 
-    def _append_calisthenics_bonus(self, primary_list: list[dict], calisthenics: list[dict], muscle_group: str, day_key: str, week_number: int) -> list[dict]:
-        """Añadir como máximo un ejercicio de calistenia al final de la sesión"""
+    def _append_calisthenics_bonus(
+        self,
+        primary_list: list[dict],
+        calisthenics: list[dict],
+        muscle_group: str,
+        day_key: str,
+        week_number: int,
+        max_total: int | None = None,
+    ) -> list[dict]:
+        """Añadir como máximo un ejercicio de calistenia respetando el tope de la sesión"""
+        if max_total is not None and len(primary_list) >= max_total:
+            return primary_list
         chosen = self._choose_calisthenics_exercise(calisthenics, muscle_group, day_key, week_number)
         if chosen:
             return primary_list + [chosen]
         return primary_list
+
+    def _get_rotation_index(self, muscle_group: str, day_key: str, week_number: int, pool_size: int) -> int:
+        """Índice de rotación estable por grupo, día y semana"""
+        if pool_size <= 0:
+            return 0
+        day_idx = self.DAY_KEYS.index(day_key) if day_key in self.DAY_KEYS else 0
+        group_offset = sum(ord(c) for c in muscle_group) % pool_size
+        return ((week_number - 1) * 7 + day_idx + group_offset) % pool_size
+
+    def _choose_rotating_exercises(
+        self,
+        exercises: list[dict],
+        muscle_group: str,
+        day_key: str,
+        week_number: int,
+        max_count: int,
+    ) -> list[dict]:
+        """Seleccionar hasta max_count ejercicios rotando cuando el catálogo desbloqueado supera el tope"""
+        if not exercises or max_count <= 0:
+            return []
+
+        sorted_exercises = sorted(
+            exercises,
+            key=lambda exercise: (exercise.get('difficulty_level', 1), exercise.get('name', '')),
+        )
+        if len(sorted_exercises) <= max_count:
+            return sorted_exercises
+
+        start = self._get_rotation_index(muscle_group, day_key, week_number, len(sorted_exercises))
+        return [sorted_exercises[(start + index) % len(sorted_exercises)] for index in range(max_count)]
     
     def _filter_exercises_by_level(self, exercises: list[dict], current_level: int) -> list[dict]:
         """Filtrar ejercicios según el nivel de dificultad actual - incluye ejercicios del nivel actual y anteriores"""
@@ -317,94 +523,10 @@ class BaseTrainer:
         # Ordenar por nivel de dificultad
         forearm_exercises.sort(key=lambda x: x.get('difficulty_level', 1))
         
-        # Calcular índice de rotación
-        day_names = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
-        day_idx = day_names.index(day_key) if day_key in day_names else 0
+        day_idx = self.DAY_KEYS.index(day_key) if day_key in self.DAY_KEYS else 0
         rotation_index = ((week_number - 1) * 7 + day_idx) % len(forearm_exercises)
-        
+
         return forearm_exercises[rotation_index]
-    
-    def _get_planned_leg_exercises(self, day_key: str, week_number: int, available_exercises: list[dict]) -> list[dict]:
-        """Obtener ejercicios de piernas planificados - incluye todos los ejercicios disponibles según nivel"""
-        # Obtener el nivel actual
-        current_level = (week_number - 1) // 4 + 1
-        
-        # Todos los ejercicios disponibles en el nivel actual
-        # Los ejercicios ya están filtrados por nivel en get_planned_exercises_for_group
-        return available_exercises
-    
-    def get_general_progression(self, level: int, original_reps: str) -> str:
-        """
-        Calcular progresión general de repeticiones según el nivel.
-        Aumenta las repeticiones base según el nivel del usuario.
-        """
-        # Si no hay dígitos, devolver original
-        if not any(c.isdigit() for c in original_reps):
-            return original_reps
-
-        try:
-            # Intentar parsear rango "X-Y"
-            if '-' in original_reps:
-                parts = original_reps.split('-')
-                min_reps = int(parts[0].strip())
-                # Manejar caso "8-10 por pierna"
-                max_reps_part = parts[1].strip()
-                suffix = ""
-                
-                if " " in max_reps_part:
-                    # Separar número del texto (ej: "10 por pierna")
-                    max_reps_num_str = max_reps_part.split(' ')[0]
-                    suffix = " " + " ".join(max_reps_part.split(' ')[1:])
-                    max_reps = int(max_reps_num_str)
-                else:
-                    max_reps = int(max_reps_part)
-                
-                # Calcular incremento basado en nivel (nivel 1 es base)
-                # Nivel 1: +0
-                # Nivel 2: +2
-                # Nivel 3: +4
-                # Nivel 4+: +6
-                increase = (level - 1) * 2
-                
-                new_min = min_reps + increase
-                new_max = max_reps + increase
-                
-                return f"{new_min}-{new_max}{suffix}"
-                
-            # Intentar parsear número único "X"
-            else:
-                # Manejar posible sufijo
-                reps_part = original_reps.strip()
-                suffix = ""
-                
-                if " " in reps_part:
-                    reps_num_str = reps_part.split(' ')[0]
-                    suffix = " " + " ".join(reps_part.split(' ')[1:])
-                    reps = int(reps_num_str)
-                else:
-                    # Soportar formatos como "20km"
-                    reps_num_str = ""
-                    for char in reps_part:
-                        if char.isdigit():
-                            reps_num_str += char
-                        else:
-                            suffix += char
-
-                    if not reps_num_str:
-                        return original_reps
-
-                    reps = int(reps_num_str)
-                
-                increase = (level - 1) * 2
-                new_reps = reps + increase
-                
-                return f"{new_reps}{suffix}"
-                
-        except Exception:
-            # Si falla el parseo, devolver original
-            return original_reps
-
-    # --- FIN utilidades nuevas ---
 
     def load_user_settings(self) -> Dict[str, Any]:
         """Cargar preferencias del usuario (equipamiento disponible, etc.)"""
@@ -783,6 +905,46 @@ class BaseTrainer:
         except Exception as e:
             st.error(f"Error calculando semana para fecha {date_str}: {e}")
             return st.session_state.get('current_week', 1)
+
+    def is_future_date(self, date_str: str) -> bool:
+        """True si la fecha es posterior a hoy."""
+        try:
+            target = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+            return target > datetime.date.today()
+        except ValueError:
+            return False
+
+    def is_before_program_start(self, date_str: str) -> bool:
+        """True si la fecha es anterior al inicio del programa."""
+        start = self.progress_data.get('program_start_date')
+        if not start:
+            return False
+        try:
+            target = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+            program_start = datetime.datetime.strptime(start, '%Y-%m-%d').date()
+            return target < program_start
+        except ValueError:
+            return False
+
+    def get_program_week_for_date(self, date_str: str) -> int:
+        """Semana de entrenamiento del programa para una fecha (mapeo calendario)."""
+        return self.get_calendar_week_for_date(date_str)
+
+    def get_pending_day_stats(self, week_number: int | None = None, is_future: bool = False) -> Dict[str, Any]:
+        """Estadísticas vacías para días futuros o aún no alcanzados."""
+        stats: Dict[str, Any] = {
+            'completed': 0,
+            'total': 0,
+            'percentage': 0,
+            'exercises': [],
+            'muscle_groups': [],
+            'is_rest_day': False,
+            'is_empty_day': True,
+            'is_future_day': is_future,
+        }
+        if week_number is not None:
+            stats['calendar_week'] = week_number
+        return stats
 
     def format_date_to_spanish(self, date_str: str) -> str:
         """Convertir fecha de formato YYYY-MM-DD a DD-MM-YYYY"""
@@ -1230,13 +1392,8 @@ class BaseTrainer:
                     st.info(f"📋 {exercise_name} marcado como pendiente")
                 st.rerun()
         
-        # Progresión dinámica para antebrazos
-        display_sets = exercise.get('sets', 1)
-        display_reps = exercise.get('reps', '')
-        if exercise.get('category') == 'forearm':
-            level = self._get_level_for_week(current_week)
-            s, r = self.get_forearm_progression(level)
-            display_sets, display_reps = s, r
+        # Progresión dinámica según semana del programa
+        display_sets, display_reps = self.get_exercise_progression(exercise, current_week)
         
         with col_title:
             # Obtener nivel de dificultad del ejercicio

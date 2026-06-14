@@ -123,9 +123,8 @@ class InfoModule(BaseTrainer):
         st.subheader("🪜 Complemento en Paralelas (Calistenia)")
         st.markdown("""
         Las paralelas son un **añadido opcional** al entrenamiento principal con mancuernas y banco.
-        No sustituyen tu plan base: en cada sesión se mantiene el trabajo con peso y se incluye
-        **como máximo 1 ejercicio de calistenia** por grupo muscular, rotando entre los disponibles
-        según tu nivel desbloqueado.
+        Cada sesión incluye **como máximo 6 ejercicios por grupo muscular**; si hay calistenia disponible,
+        **1 de esos 6** será en paralelas, rotando entre los desbloqueados según tu nivel.
         """)
 
         for _, title, groups in self.CALISTHENICS_SECTIONS:

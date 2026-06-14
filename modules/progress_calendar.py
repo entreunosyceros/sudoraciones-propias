@@ -31,6 +31,11 @@ class ProgressModule(BaseTrainer):
     
     def get_day_completion_stats_filtered(self, date_str: str, filter_week: int | None = None) -> Dict[str, Any]:
         """Obtener estadísticas de completado de un día filtradas por semana"""
+        if self.is_future_date(date_str):
+            return self.get_pending_day_stats(is_future=True)
+        if self.is_before_program_start(date_str):
+            return self.get_pending_day_stats()
+
         if filter_week is None:
             week_num = int(st.session_state.get('current_week', 1))
         else:
@@ -193,106 +198,42 @@ class ProgressModule(BaseTrainer):
 
     def get_week_number_for_date(self, date_str: str) -> int:
         """Determinar qué número de semana corresponde a una fecha específica"""
-        # Primero, verificar si tenemos la semana guardada explícitamente
+        if self.is_future_date(date_str):
+            return self.get_program_week_for_date(date_str)
+
+        # Mapeo explícito guardado al marcar ejercicios
         if 'exercise_weeks' in self.progress_data and date_str in self.progress_data['exercise_weeks']:
             return self.progress_data['exercise_weeks'][date_str]
-        
-        # Si la fecha tiene ejercicios registrados, intentar determinar la semana basándose en los IDs de ejercicios
+
+        # Semana del programa según calendario (fuente canónica)
+        program_week = self.get_program_week_for_date(date_str)
+
+        # Si la fecha tiene ejercicios registrados, validar contra la semana del programa
         if 'completed_exercises' in self.progress_data and date_str in self.progress_data['completed_exercises']:
             exercise_ids = list(self.progress_data['completed_exercises'][date_str].keys())
             if exercise_ids:
-                # Los IDs de ejercicio incluyen el día de la semana al final
-                # Podemos intentar hacer coincidir con diferentes semanas
-                date_obj = datetime.datetime.strptime(date_str, '%Y-%m-%d')
-                day_names = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
-                day_key = day_names[date_obj.weekday()]
-                
-                # Buscar en qué semana estos ejercicios tienen sentido
-                for week_num in range(1, 21):  # Revisar semanas 1-20
-                    week_info = self.get_week_info(week_num)
-                    
-                    if week_num <= 4:
-                        week_key = f"semana{week_num}"
-                        if week_key not in self.config.get('weekly_schedule', {}):
-                            continue
-                        week_plan = self.config['weekly_schedule'][week_key]
-                    else:
-                        # Para semanas avanzadas, usar el primer módulo de training
-                        from .training_plan import TrainingPlanModule
-                        trainer = TrainingPlanModule()
-                        trainer.config = self.config
-                        trainer.progress_data = self.progress_data
-                        week_plan = trainer.generate_advanced_week(week_num)
-                    
-                    muscle_groups = week_plan.get(day_key, [])
-                    
-                    # Verificar si los ejercicios registrados coinciden con esta semana
-                    expected_exercises = set()
-                    for muscle_group in muscle_groups:
-                        if muscle_group in self.config.get('exercises', {}):
-                            for exercise in self.config['exercises'][muscle_group]:
-                                exercise_id = f"{muscle_group}_{exercise['name']}_{day_key}"
-                                expected_exercises.add(exercise_id)
-                    
-                    # Si al menos el 50% de los ejercicios registrados coinciden con esta semana
-                    registered_exercises = set(exercise_ids)
-                    if expected_exercises and len(registered_exercises & expected_exercises) >= len(registered_exercises) * 0.5:
-                        # Guardar esta información para futura referencia
-                        if 'exercise_weeks' not in self.progress_data:
-                            self.progress_data['exercise_weeks'] = {}
-                        self.progress_data['exercise_weeks'][date_str] = week_num
-                        self.save_progress_data()
-                        return week_num
-        
-        # NUEVO: Inferir semana desde otros días de la MISMA semana calendario (Lun-Dom)
-        try:
-            date_obj = datetime.datetime.strptime(date_str, '%Y-%m-%d')
-            start_of_week = date_obj - datetime.timedelta(days=date_obj.weekday())  # lunes
-            dates_in_week = [(start_of_week + datetime.timedelta(days=i)).strftime('%Y-%m-%d') for i in range(7)]
-
-            # 1) Si cualquiera de esos días ya tiene mapeo, usarlo
-            weeks_map = self.progress_data.get('exercise_weeks', {})
-            for d in dates_in_week:
-                if d in weeks_map:
-                    inferred = weeks_map[d]
-                    # Persistir para la fecha consultada
-                    self.progress_data.setdefault('exercise_weeks', {})[date_str] = inferred
-                    self.save_progress_data()
-                    return inferred
-
-            # 2) Si alguno tiene ejercicios con sufijo _weekN, extraer N y usar la moda
-            from collections import Counter
-            week_nums = []
-            for d in dates_in_week:
-                ex_data = self.progress_data.get('completed_exercises', {}).get(d, {})
-                for ex_id in ex_data.keys():
-                    # Buscar patrón _week<number> al final
-                    if '_week' in ex_id:
+                from collections import Counter
+                week_numbers = []
+                for exercise_id in exercise_ids:
+                    if '_week' in exercise_id:
                         try:
-                            suffix = ex_id.split('_week')[-1]
-                            n = ''
-                            for ch in suffix:
-                                if ch.isdigit():
-                                    n += ch
-                                else:
-                                    break
-                            if n:
-                                week_nums.append(int(n))
-                        except Exception:
-                            pass
-            if week_nums:
-                inferred = Counter(week_nums).most_common(1)[0][0]
-                self.progress_data.setdefault('exercise_weeks', {})[date_str] = inferred
-                self.save_progress_data()
-                return inferred
-        except Exception:
-            pass
-        
-        # Fallback: usar la semana actual SOLO si no se pudo inferir de ninguna forma
-        return st.session_state.get('current_week', 1)
+                            week_part = exercise_id.split('_week')[-1]
+                            week_num = int(''.join(ch for ch in week_part if ch.isdigit()))
+                            week_numbers.append(week_num)
+                        except (ValueError, IndexError):
+                            continue
+                if week_numbers:
+                    return Counter(week_numbers).most_common(1)[0][0]
+
+        return program_week
 
     def get_day_completion_stats(self, date_str: str, week_number: int | None = None) -> Dict[str, Any]:
         """Obtener estadísticas de finalización para un día específico"""
+        if self.is_future_date(date_str):
+            return self.get_pending_day_stats(is_future=True)
+        if self.is_before_program_start(date_str):
+            return self.get_pending_day_stats()
+
         # Si no se proporciona week_number, usar el mapeo calendario
         if week_number is None:
             week_number = self.get_calendar_week_for_date(date_str)
@@ -387,7 +328,12 @@ class ProgressModule(BaseTrainer):
 
         La idea: identificar semana correspondiente y reutilizar la lógica del módulo de plan.
         """
-        week_num = self.get_week_number_for_date(date_str)
+        if self.is_future_date(date_str):
+            return self.get_pending_day_stats(is_future=True)
+        if self.is_before_program_start(date_str):
+            return self.get_pending_day_stats()
+
+        week_num = self.get_program_week_for_date(date_str)
         from .training_plan import TrainingPlanModule
         tp = TrainingPlanModule()
         tp.config = self.config
@@ -524,7 +470,10 @@ class ProgressModule(BaseTrainer):
                             day_stats = self.get_day_completion_stats_filtered(date_str, view_week)
                         
                         # Determinar clase CSS según porcentaje y tipo de día
-                        if day_stats.get('is_rest_day', False):
+                        if day_stats.get('is_future_day', False):
+                            css_class = "day-none"
+                            percentage_text = ""
+                        elif day_stats.get('is_rest_day', False):
                             css_class = "day-rest"
                             percentage_text = "✓"
                         elif day_stats.get('is_empty_day', False):
@@ -550,7 +499,9 @@ class ProgressModule(BaseTrainer):
                             today_class = " day-today"
                         
                         # Crear tooltip con información
-                        if day_stats.get('is_rest_day', False):
+                        if day_stats.get('is_future_day', False):
+                            tooltip = f"Día {day}: Pendiente (aún no llega)"
+                        elif day_stats.get('is_rest_day', False):
                             tooltip = f"Día {day}: Día de descanso ✓"
                         elif day_stats.get('is_empty_day', False):
                             tooltip = f"Día {day}: Sin entrenar"

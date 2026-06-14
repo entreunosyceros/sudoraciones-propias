@@ -39,7 +39,8 @@ Incluye:
 
 <img width="1073" height="1829" alt="sudoraciones-biblioteca" src="https://github.com/user-attachments/assets/8a005daa-2f02-41b0-aa8c-cb20c3ffe9dd" />
 
-- **Plan de 20 semanas** en 4 niveles de dificultad, con progresión automática.
+- **Plan de 20 semanas** en 4 niveles de dificultad, con progresión automática de repeticiones, series, tiempos de plancha y distancia en bici.
+- **Rotación inteligente:** como máximo **6 ejercicios por grupo muscular y sesión**; cuando desbloqueas más, la app alterna cuáles salen según semana y día.
 - **Equipamiento configurable** en la barra lateral: el plan solo programa ejercicios que puedes hacer con lo que tienes en casa.
 - **Calendario de progreso** que respeta la fecha de inicio que elijas (sin forzar lunes).
 - **Biblioteca de ejercicios** con filtros por grupo muscular y equipamiento.
@@ -91,14 +92,14 @@ Al registrar una comida en **Tracking Diario**, describe lo que has comido en le
 | Salsas y aliños | Mayonesa, alioli, ketchup, tomate frito, salsa barbacoa, salsa de soja, aceite de oliva |
 | Especias | Pimentón dulce, orégano |
 | Lácteos y postres | Yogur natural, quesos gallegos/asturianos, queso batido 0%, filloas, tarta de Santiago, bizcocho, galletas de canela, galletas integrales |
-| Bebidas | Agua, zumo natural/comprado, coca-cola, té helado, tónica, batido de frutas, café, sidra |
+| Bebidas | Agua, zumo natural/comprado, coca-cola, té helado, tónica, batido de frutas, café, sidra, cerveza, vino |
 | Otros | Fruta, membrillo, frutos secos, batido de proteínas, tofu |
 
 Para ampliar la base, edita `data/alimentos_es.json` (campos: `nombre`, `aliases`, `por_100g`, `racion_tipica_g`).
 
 ## Complemento en paralelas (calistenia)
 
-El entrenamiento principal sigue centrado en **mancuernas, banco y suelo**. Las paralelas son opcionales y actúan como añadido:
+El entrenamiento principal sigue centrado en **mancuernas, banco y suelo**. Las paralelas son opcionales y actúan como añadido dentro del **tope de 6 ejercicios por grupo y sesión**:
 
 | Patrón | Ejercicios | Niveles |
 |--------|-----------|---------|
@@ -106,7 +107,7 @@ El entrenamiento principal sigue centrado en **mancuernas, banco y suelo**. Las 
 | **Tirón** | Remo invertido clásico (neutro), supino, pies elevados, tuck australiano, encogimientos escapulares | 1–4 |
 | **Core** | Elevaciones de rodillas, piernas estiradas, L-sit hold, L-sit a knee raise dinámico | 1–4 |
 
-En el plan semanal aparece **1 ejercicio de calistenia rotativo** por sesión de cada grupo (pecho, espalda, hombros, brazos, abs). Los ejercicios marcados con 🪜 en el catálogo siguiente son ese complemento.
+Si tienes paralelas y hay calistenia desbloqueada para ese grupo, **1 de los 6 huecos de la sesión** se reserva para un ejercicio 🪜 rotativo (pecho, espalda, hombros, brazos, abs). El resto son ejercicios principales con peso o suelo.
 
 ## Equipamiento configurable
 
@@ -149,7 +150,20 @@ La pestaña **📈 Estadísticas** también muestra un resumen de coherencia sem
 
 ## Catálogo completo de ejercicios del programa
 
-El plan dura **20 semanas** repartidas en **4 niveles**. Cada nivel desbloquea ejercicios nuevos; los anteriores se mantienen en la rutina. En cada sesión se realizan **todos los ejercicios principales** desbloqueados del grupo muscular, más **como máximo 1 ejercicio en paralelas** (🪜) rotando entre los disponibles.
+El plan dura **20 semanas** repartidas en **4 niveles**. Cada nivel desbloquea ejercicios nuevos; los anteriores siguen en el catálogo pero **no salen todos a la vez** en cada sesión.
+
+**Regla de sesión:** como máximo **6 ejercicios por grupo muscular**. Si hay más desbloqueados, la app **rota** la selección según semana y día para que vayas cubriendo todo el repertorio sin sesiones eternas. Si hay paralelas, **1 de esos 6** puede ser calistenia (🪜).
+
+| Nivel | Ejemplo pecho (aprox.) | Ejemplo brazos (aprox.) |
+|-------|------------------------|-------------------------|
+| 1 | 3 ejercicios (todos los desbloqueados) | 4 (bíceps, tríceps, antebrazo, calistenia) |
+| 2 | 5 (4 principales + 1 🪜) | 6 (tope: alterna antebrazo y calistenia) |
+| 3 | 6 (tope: 5 principales + 1 🪜) | 6 (rota entre curl 21s, antebrazos, etc.) |
+| 4+ | 6 (rota entre press, flexiones, fondos…) | 6 (rota bíceps/tríceps/antebrazo/calistenia) |
+
+Las tablas del catálogo listan **todo lo desbloqueable** por nivel, no necesariamente lo que verás el mismo día. Los ejercicios 🪜 son el complemento en paralelas.
+
+Las tablas siguientes muestran **repeticiones de referencia en la semana 1** del programa (rangos de fuerza típicos: **9-10**). A partir de ahí la app ajusta automáticamente series/reps/tiempos según la semana y el nivel (ver [Progresión de entrenamiento](#progresión-de-entrenamiento)).
 
 **Equipamiento del programa:** mancuernas (8 kg, 10 kg y 12 kg), banco con barra (30 kg), bicicleta estática, espacio en el suelo y, opcionalmente, paralelas.
 
@@ -165,92 +179,92 @@ El plan dura **20 semanas** repartidas en **4 niveles**. Cada nivel desbloquea e
 | Sábado | Pecho, brazos |
 | Domingo | Descanso |
 
-> A partir de la semana 5 el calendario rota variaciones del ciclo base con más frecuencia de abdominales y cardio según el nivel.
+> A partir de la semana 5 el calendario rota variaciones del ciclo base con más frecuencia de abdominales y cardio según el nivel. Los ejercicios dentro de cada sesión también rotan cuando el catálogo del grupo supera 6.
 
 ---
 
-### 🫸 Pecho (9 ejercicios)
+### 🫸 Pecho (9 en catálogo · hasta 6 por sesión)
 
-| Nivel | Ejercicio | Reps | Equipo |
-|-------|-----------|------|--------|
-| 1 | Press de Banca con Mancuernas | 6-8 | Mancuernas |
-| 1 | Flexiones de Pecho | 8-12 | Suelo |
-| 1 | 🪜 Flexiones Profundas (Deficit Push-ups) | 8-12 | Paralelas |
-| 2 | Press de Banca con Barra | 6-8 | Banco/barra |
-| 2 | Aperturas con Mancuernas | 8-10 | Mancuernas |
-| 2 | 🪜 Fondos con Torso Inclinado | 6-10 | Paralelas |
-| 3 | Press Inclinado con Barra | 8-10 | Banco/barra |
-| 3 | 🪜 Fondos Clásicos (Dips) | 6-8 | Paralelas |
-| 4 | Flexiones con Mancuernas | 8-12 | Mancuernas |
+| Nivel | Ejercicio | Reps (sem. 1) | Equipo |
+|-------|-----------|---------------|--------|
+| 1 | Press de Banca con Mancuernas | 9-10 | Mancuernas |
+| 1 | Flexiones de Pecho | 9-10 | Suelo |
+| 1 | 🪜 Flexiones Profundas (Deficit Push-ups) | 9-10 | Paralelas |
+| 2 | Press de Banca con Barra | 9-10 | Banco/barra |
+| 2 | Aperturas con Mancuernas | 9-10 | Mancuernas |
+| 2 | 🪜 Fondos con Torso Inclinado | 9-10 | Paralelas |
+| 3 | Press Inclinado con Barra | 9-10 | Banco/barra |
+| 3 | 🪜 Fondos Clásicos (Dips) | 9-10 | Paralelas |
+| 4 | Flexiones con Mancuernas | 9-10 | Mancuernas |
 
 ---
 
-### 🔙 Espalda (10 ejercicios)
+### 🔙 Espalda (10 en catálogo · hasta 6 por sesión)
 
-| Nivel | Ejercicio | Reps | Equipo |
-|-------|-----------|------|--------|
-| 1 | Remo con Mancuernas | 8-10 | Mancuernas |
-| 1 | Remo Inclinado con Mancuernas | 8-10 | Mancuernas |
-| 1 | 🪜 Remo Invertido Clásico (Agarre Neutro) | 10-12 | Paralelas |
+| Nivel | Ejercicio | Reps (sem. 1) | Equipo |
+|-------|-----------|---------------|--------|
+| 1 | Remo con Mancuernas | 9-10 | Mancuernas |
+| 1 | Remo Inclinado con Mancuernas | 9-10 | Mancuernas |
+| 1 | 🪜 Remo Invertido Clásico (Agarre Neutro) | 9-10 | Paralelas |
 | 1 | 🪜 Encogimientos Escapulares en Inversión | 10-15 | Paralelas |
-| 2 | Peso Muerto con Mancuernas | 8-10 | Mancuernas |
-| 2 | 🪜 Remo Invertido Supino (Enfoque Dorsal y Bíceps) | 8-12 | Paralelas |
-| 3 | Remo con Barra | 6-8 | Banco/barra |
-| 3 | 🪜 Remo Invertido con Pies Elevados | 6-10 | Paralelas |
-| 4 | Peso Muerto con Barra | 6-8 | Banco/barra |
-| 4 | 🪜 Remo Australiano en Tuck (Pies Suspendidos) | 5-8 | Paralelas |
+| 2 | Peso Muerto con Mancuernas | 9-10 | Mancuernas |
+| 2 | 🪜 Remo Invertido Supino (Enfoque Dorsal y Bíceps) | 9-10 | Paralelas |
+| 3 | Remo con Barra | 9-10 | Banco/barra |
+| 3 | 🪜 Remo Invertido con Pies Elevados | 9-10 | Paralelas |
+| 4 | Peso Muerto con Barra | 9-10 | Banco/barra |
+| 4 | 🪜 Remo Australiano en Tuck (Pies Suspendidos) | 9-10 | Paralelas |
 
 ---
 
-### 🤷 Hombros (7 ejercicios)
+### 🤷 Hombros (7 en catálogo · hasta 6 por sesión)
 
-| Nivel | Ejercicio | Reps | Equipo |
-|-------|-----------|------|--------|
-| 1 | Press Militar con Mancuernas | 6-8 | Mancuernas |
-| 1 | Elevaciones Laterales | 8-10 | Mancuernas |
-| 2 | Elevaciones Frontales | 8-12 | Mancuernas |
-| 2 | 🪜 Flexiones de Pica (Pike Push-ups) | 8-12 | Paralelas |
-| 3 | Press Arnold | 8-10 | Mancuernas |
+| Nivel | Ejercicio | Reps (sem. 1) | Equipo |
+|-------|-----------|---------------|--------|
+| 1 | Press Militar con Mancuernas | 9-10 | Mancuernas |
+| 1 | Elevaciones Laterales | 9-10 | Mancuernas |
+| 2 | Elevaciones Frontales | 9-10 | Mancuernas |
+| 2 | 🪜 Flexiones de Pica (Pike Push-ups) | 9-10 | Paralelas |
+| 3 | Press Arnold | 9-10 | Mancuernas |
 | 3 | 🪜 Soporte Isométrico (Soporte de Fondos) | 20-40 s | Paralelas |
-| 4 | Elevaciones Posteriores | 10-12 | Mancuernas |
+| 4 | Elevaciones Posteriores | 9-10 | Mancuernas |
 
 ---
 
-### 💪 Brazos (10 ejercicios)
+### 💪 Brazos (10 en catálogo · hasta 6 por sesión)
 
-Incluye trabajo de bíceps, tríceps y antebrazos. Los ejercicios de antebrazo rotan en el plan (1 por sesión).
+Incluye bíceps, tríceps y antebrazos. **1 antebrazo por sesión** (rotativo) dentro del tope de 6; el resto alterna bíceps/tríceps y, si aplica, 1 calistenia 🪜.
 
-| Nivel | Ejercicio | Reps | Equipo |
-|-------|-----------|------|--------|
-| 1 | Curl de Bíceps | 6-8 | Mancuerna 12 kg |
-| 1 | Extensiones de Tríceps | 8-10 | Mancuernas |
-| 1 | Curl de Muñeca *(antebrazo)* | 8-10 | Mancuernas |
-| 1 | 🪜 Flexiones de Tríceps (Agarre Neutro) | 8-12 | Paralelas |
-| 2 | Curl Martillo | 8-10 | Mancuernas |
-| 2 | Fondos en Silla | 6-12 | Banco |
-| 2 | Curl de Muñeca Inverso *(antebrazo)* | 8-10 | Mancuernas |
-| 2 | 🪜 Fondos con Enfoque en Tríceps | 6-10 | Paralelas |
-| 3 | Pronación/Supinación con Mancuerna *(antebrazo)* | 8-10 | Mancuernas |
+| Nivel | Ejercicio | Reps (sem. 1) | Equipo |
+|-------|-----------|---------------|--------|
+| 1 | Curl de Bíceps | 9-10 | Mancuerna 12 kg |
+| 1 | Extensiones de Tríceps | 9-10 | Mancuernas |
+| 1 | Curl de Muñeca *(antebrazo)* | 9-10 | Mancuernas |
+| 1 | 🪜 Flexiones de Tríceps (Agarre Neutro) | 9-10 | Paralelas |
+| 2 | Curl Martillo | 9-10 | Mancuernas |
+| 2 | Fondos en Silla | 9-10 | Banco |
+| 2 | Curl de Muñeca Inverso *(antebrazo)* | 9-10 | Mancuernas |
+| 2 | 🪜 Fondos con Enfoque en Tríceps | 9-10 | Paralelas |
+| 3 | Pronación/Supinación con Mancuerna *(antebrazo)* | 9-10 | Mancuernas |
 | 4 | Curl 21s | 21 (7+7+7) | Mancuernas |
 
 ---
 
 ### 🦵 Piernas (5 ejercicios)
 
-| Nivel | Ejercicio | Reps | Equipo |
-|-------|-----------|------|--------|
-| 1 | Sentadillas con Mancuernas | 10-12 | Mancuernas |
+| Nivel | Ejercicio | Reps (sem. 1) | Equipo |
+|-------|-----------|---------------|--------|
+| 1 | Sentadillas con Mancuernas | 9-10 | Mancuernas |
 | 1 | Sentadillas Sin Peso | 12-15 | Suelo |
-| 2 | Zancadas con Mancuernas | 8-10/pierna | Mancuernas |
-| 3 | Sentadillas Búlgaras | 8-10/pierna | Mancuernas |
-| 4 | Sentadillas Pistol (Asistidas) | 5-8/pierna | Suelo |
+| 2 | Zancadas con Mancuernas | 9-10/pierna | Mancuernas |
+| 3 | Sentadillas Búlgaras | 9-10/pierna | Mancuernas |
+| 4 | Sentadillas Pistol (Asistidas) | 9-10/pierna | Suelo |
 
 ---
 
 ### 🦶 Gemelos (5 ejercicios)
 
-| Nivel | Ejercicio | Reps | Equipo |
-|-------|-----------|------|--------|
+| Nivel | Ejercicio | Reps (sem. 1) | Equipo |
+|-------|-----------|---------------|--------|
 | 1 | Elevaciones de Gemelos de Pie | 15-20 | Mancuernas |
 | 1 | Elevaciones de Gemelos Sin Peso | 20-25 | Suelo |
 | 2 | Elevaciones de Gemelos Sentado | 12-15 | Mancuernas |
@@ -259,31 +273,31 @@ Incluye trabajo de bíceps, tríceps y antebrazos. Los ejercicios de antebrazo r
 
 ---
 
-### 🔥 Abdominales (11 ejercicios)
+### 🔥 Abdominales (11 en catálogo · hasta 6 por sesión)
 
-Combina ejercicios de suelo con complementos en paralelas (abs avanzados integrados en sesiones de abs).
+Combina suelo y paralelas (abs avanzados integrados en sesiones de abs). En niveles altos rota planchas, abdominales y ejercicios 🪜.
 
-| Nivel | Ejercicio | Reps | Equipo |
-|-------|-----------|------|--------|
+| Nivel | Ejercicio | Reps (sem. 1) | Equipo |
+|-------|-----------|---------------|--------|
 | 1 | Abdominales Tradicionales | 15-20 | Suelo |
 | 1 | Plancha | 30-60 s | Suelo |
 | 1 | 🪜 Elevaciones de Rodillas en Paralelas | 10-15 | Paralelas |
 | 2 | Plancha Lateral | 20-40 s/lado | Suelo |
 | 2 | Abdominales Bajas | 12-15 | Suelo |
 | 3 | Abdominales Laterales | 10-12/lado | Suelo |
-| 3 | 🪜 Elevaciones de Piernas Estiradas en Paralelas | 8-12 | Paralelas |
+| 3 | 🪜 Elevaciones de Piernas Estiradas en Paralelas | 9-10 | Paralelas |
 | 4 | Plancha con Elevación de Brazos | 10-15/brazo | Suelo |
-| 4 | V-Ups | 8-12 | Suelo |
+| 4 | V-Ups | 9-10 | Suelo |
 | 4 | 🪜 L-Sit Hold en Paralelas | 10-20 s | Paralelas |
-| 4 | 🪜 L-Sit a Knee Raise Dinámico | 6-10 | Paralelas |
+| 4 | 🪜 L-Sit a Knee Raise Dinámico | 9-10 | Paralelas |
 
 ---
 
 ### 🏃 Cardio (1 ejercicio)
 
-| Nivel | Ejercicio | Reps | Equipo |
-|-------|-----------|------|--------|
-| 1 | Bicicleta Estática | 20 km | Bici estática |
+| Nivel | Ejercicio | Reps (sem. 1) | Equipo |
+|-------|-----------|---------------|--------|
+| 1 | Bicicleta Estática | 15 km | Bici estática |
 
 ---
 
@@ -301,12 +315,24 @@ Disponibles en la pestaña **Biblioteca de Ejercicios** para calentamiento, esti
 
 ## Progresión de entrenamiento
 
+La app calcula **series y repeticiones visibles** en el plan, la biblioteca y las estadísticas según la semana del programa. Punto de partida en **semana 1** para rangos de fuerza habituales: **9-10 repeticiones** y **3 series** (nivel 1).
+
+### Reglas automáticas
+
+| Tipo | Semana 1 | Series por nivel | Progresión de reps |
+|------|----------|------------------|-------------------|
+| **Fuerza** (tope ≤ 12 reps en plantilla) | 9-10 | N1: **3** · N2: **4** · N3: **5** · N4+: **6** | N1-2: +1 rep/semana del ciclo y +2/nivel; N3+: reps fijas en 9-10 (o plantilla) |
+| **Planchas** | 30-60 s (según ejercicio) | 3 / 4 / 5 / 6 series | +10 s por cada cambio de nivel |
+| **Bicicleta** | 15 km (niveles 1-2) | 1 sesión | 20 km desde nivel 3 |
+| **Alto volumen** (> 12 reps: gemelos, abdominales…) | Valor de plantilla | 3 / 4 / 5 / 6 series | N1-2: +1 rep/semana y +2/nivel; N3+: reps fijas |
+| **Curl 21s, tiempos auxiliares** | Sin cambio automático | 3 / 4 / 5 / 6 series | Valor fijo de plantilla |
+
 ### Niveles (20 semanas)
 
-- **Nivel 1 (Semanas 1-4):** adaptación inicial.
-- **Nivel 2 (Semanas 5-8):** incremento de frecuencia.
-- **Nivel 3 (Semanas 9-12):** incremento de volumen.
-- **Nivel 4+ (Semanas 13-20):** plan avanzado.
+- **Nivel 1 (Semanas 1-4):** adaptación inicial — **3 series**, reps 9-10 en fuerza, +1 rep por semana del ciclo.
+- **Nivel 2 (Semanas 5-8):** incremento de frecuencia — **4 series**, +2 reps respecto al punto de partida del nivel 1.
+- **Nivel 3 (Semanas 9-12):** incremento de volumen — **5 series**, reps de fuerza se mantienen en 9-10 (sin más subidas de reps).
+- **Nivel 4+ (Semanas 13-20):** plan avanzado — **6 series**, reps de fuerza estables.
 
 ### Frecuencia de abdominales por nivel
 
@@ -314,6 +340,21 @@ Disponibles en la pestaña **Biblioteca de Ejercicios** para calentamiento, esti
 - **Nivel 2:** 3 días/semana
 - **Nivel 3:** 4 días/semana
 - **Nivel 4+:** 5 días/semana
+
+### Rotación por grupo muscular
+
+La app aplica estas reglas al montar cada sesión del plan:
+
+| Regla | Detalle |
+|-------|---------|
+| **Tope** | 6 ejercicios por grupo muscular y sesión |
+| **Niveles bajos** | Si hay ≤ 6 desbloqueados, se muestran todos |
+| **Niveles altos** | Ventana rotativa según **semana del programa + día de la semana + grupo** |
+| **Calistenia 🪜** | Reserva 1 hueco dentro del tope cuando hay paralelas y ejercicios desbloqueados |
+| **Brazos** | 1 antebrazo rotativo por sesión; el resto completa hasta 6 |
+| **Cardio** | Siempre 1 ejercicio (bicicleta) |
+
+**Ejemplo nivel 4 — pecho un viernes vs un sábado:** la combinación de press, flexiones y fondos cambia; no repites los mismos 9 del catálogo en una sola sesión.
 
 ## Instalación (.deb)
 
