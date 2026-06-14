@@ -1,6 +1,6 @@
 # 💪 Sudoraciones propias 💪
 
-<img width="1073" height="1808" alt="sudoraciones_propias" src="https://github.com/user-attachments/assets/bb27c8a1-1c5b-430b-b3df-f2f8352882f7" />
+<img width="1066" height="1832" alt="sudoraciones-portada" src="https://github.com/user-attachments/assets/c59911ed-bbee-4a42-bbb3-f6e6433536ec" />
 
 Sistema personal de entrenamiento en Python + Streamlit con progresión automática, calendario de progreso y módulo de nutrición.
 
@@ -37,6 +37,8 @@ Incluye:
 
 ### Entrenamiento
 
+<img width="1073" height="1829" alt="sudoraciones-biblioteca" src="https://github.com/user-attachments/assets/8a005daa-2f02-41b0-aa8c-cb20c3ffe9dd" />
+
 - **Plan de 20 semanas** en 4 niveles de dificultad, con progresión automática.
 - **Equipamiento configurable** en la barra lateral: el plan solo programa ejercicios que puedes hacer con lo que tienes en casa.
 - **Calendario de progreso** que respeta la fecha de inicio que elijas (sin forzar lunes).
@@ -55,6 +57,8 @@ Incluye:
 Los gastos calóricos son **estimaciones**. Sin pulsómetro o wearable no se puede conocer el gasto real con precisión.
 
 ### Estimador de alimentos
+
+<img width="1079" height="1835" alt="sudoraciones-nutricion" src="https://github.com/user-attachments/assets/112ea7a7-ed42-4685-b34d-e86aa7aac3c5" />
 
 Al registrar una comida en **Tracking Diario**, describe lo que has comido en lenguaje natural. El sistema:
 
@@ -402,5 +406,7 @@ pip install -r requirements.txt
 ```
 
 ---
+
+<img width="1079" height="1834" alt="sudoraciones-info" src="https://github.com/user-attachments/assets/f1f61266-dcaf-4ac7-9b84-cd4f6a9298f4" />
 
 Desarrollado con Python y Streamlit por entreunosyceros.
