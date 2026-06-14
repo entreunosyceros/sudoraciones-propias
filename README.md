@@ -58,8 +58,8 @@ Los gastos calóricos son **estimaciones**. Sin pulsómetro o wearable no se pue
 
 Al registrar una comida en **Tracking Diario**, describe lo que has comido en lenguaje natural. El sistema:
 
-1. **Reconoce ingredientes** contra la base local `data/alimentos_es.json` (~116 alimentos).
-2. **Parsea cantidades** en gramos (`200 g`), unidades (`2 huevos`) o usa la ración típica si no indicas cantidad.
+1. **Reconoce ingredientes** contra la base local `data/alimentos_es.json` (~135 alimentos).
+2. **Parsea cantidades** en gramos (`200 g`), unidades (`2 huevos`, `3 claras`), cucharadas (`1 cucharada de azúcar`), latas (`1 lata coca-cola`), litros/ml/cl, o usa la ración típica si no indicas cantidad.
 3. **Separa platos compuestos** con `+`, `,`, `y` o `con` (ej: «pechuga de pollo con arroz»).
 4. **Consulta Open Food Facts** como respaldo si un alimento no está en la base local (requiere conexión).
 5. **Muestra un desglose orientativo** editable antes de guardar; las comidas estimadas quedan marcadas como tales.
@@ -69,21 +69,26 @@ Al registrar una comida en **Tracking Diario**, describe lo que has comido en le
 - `200 g pechuga de pollo con 180 g arroz blanco cocido`
 - `ensaladilla rusa, 2 huevos y pan integral`
 - `hamburguesa de pollo, cocacola y ensalada mixta`
+- `rapante a la plancha con guisantes y patata`
+- `yogur natural, galletas integrales y café solo`
+- `bizcocho de limón y tónica`
 - `fabada asturiana` (usa ración típica si no pones gramos)
 
 **Categorías cubiertas en la base local:**
 
 | Categoría | Ejemplos |
 |-----------|----------|
-| Proteínas | Pollo, pescado, marisco, ternera, cerdo, huevos, jamón, hamburguesas, albóndigas, chuletas |
+| Proteínas | Pollo, pescado, marisco, ternera, cerdo, huevos, claras, jamón, bacon, hamburguesas, albóndigas, chuletas |
+| Pescado gallego | Merluza, bacalao, pulpo, rapante (gallo/meiga), zamburiñas, berberechos |
 | Carbohidratos | Arroz, pasta, pan, patata, empanada, pizza |
-| Legumbres y guisos | Lentejas, garbanzos, fabada, habas, cocido, caldo gallego |
-| Verduras y ensaladas | Grelos, brócoli, tomate, aceitunas, ensaladilla rusa |
+| Legumbres y guisos | Lentejas, garbanzos, fabada, habas, guisantes, cocido, caldo gallego |
+| Verduras y ensaladas | Grelos, brócoli, tomate, cebolla, lechuga, zanahoria, aceitunas, ensaladilla rusa |
 | Platos preparados | Tortilla de patatas, pulpo a la gallega, lacón con grelos, cachopo, lasaña |
-| Salsas y aliños | Mayonesa, alioli, ketchup, tomate frito, aceite de oliva |
-| Lácteos y postres | Yogur, quesos gallegos/asturianos, filloas, tarta de Santiago |
-| Bebidas | Agua, zumo natural/comprado, coca-cola, té helado, batido de frutas, café, sidra |
-| Otros | Fruta, frutos secos, batido de proteínas, tofu |
+| Salsas y aliños | Mayonesa, alioli, ketchup, tomate frito, salsa barbacoa, salsa de soja, aceite de oliva |
+| Especias | Pimentón dulce, orégano |
+| Lácteos y postres | Yogur natural, quesos gallegos/asturianos, queso batido 0%, filloas, tarta de Santiago, bizcocho, galletas de canela, galletas integrales |
+| Bebidas | Agua, zumo natural/comprado, coca-cola, té helado, tónica, batido de frutas, café, sidra |
+| Otros | Fruta, membrillo, frutos secos, batido de proteínas, tofu |
 
 Para ampliar la base, edita `data/alimentos_es.json` (campos: `nombre`, `aliases`, `por_100g`, `racion_tipica_g`).
 
