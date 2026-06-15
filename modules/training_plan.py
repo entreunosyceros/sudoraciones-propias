@@ -140,30 +140,9 @@ class TrainingPlanModule(BaseTrainer):
         return newly_unlocked
 
     def get_week_number_for_date(self, date_str: str) -> int:
-        """Determinar qué número de semana corresponde a una fecha específica"""
-        if self.is_future_date(date_str):
-            return self.get_program_week_for_date(date_str)
-
-        if 'exercise_weeks' in self.progress_data and date_str in self.progress_data['exercise_weeks']:
-            return self.progress_data['exercise_weeks'][date_str]
-        
-        if 'completed_exercises' in self.progress_data and date_str in self.progress_data['completed_exercises']:
-            exercise_ids = list(self.progress_data['completed_exercises'][date_str].keys())
-            if exercise_ids:
-                from collections import Counter
-                week_numbers = []
-                for exercise_id in exercise_ids:
-                    if '_week' in exercise_id:
-                        try:
-                            week_part = exercise_id.split('_week')[-1]
-                            week_num = int(''.join(ch for ch in week_part if ch.isdigit()))
-                            week_numbers.append(week_num)
-                        except (ValueError, IndexError):
-                            continue
-                
-                if week_numbers:
-                    return Counter(week_numbers).most_common(1)[0][0]
-        
+        """Semana del programa a la que pertenece una fecha."""
+        if self.is_before_program_start(date_str):
+            return 1
         return self.get_program_week_for_date(date_str)
 
     def update_completed_workouts(self):
@@ -542,10 +521,10 @@ class TrainingPlanModule(BaseTrainer):
     def render_daily_progress_stats(self, current_week: int):
         """Renderizar estadísticas de progreso del día actual"""
         current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-        
-        # Recargar progreso para asegurar datos actualizados
+
         self.reload_progress_data()
-        day_stats = self.get_day_completion_stats(current_date, current_week)
+        today_week = self.get_program_week_for_date(current_date)
+        day_stats = self.get_day_completion_stats(current_date, today_week)
         
         if day_stats['total'] > 0:
             st.markdown("### 📊 Progreso de Hoy")

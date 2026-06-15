@@ -76,78 +76,53 @@ class BaseTrainer:
         if hasattr(st, 'cache_data'):
             st.cache_data.clear()
     
+    def _get_training_plan_module(self):
+        """Instancia compartida de TrainingPlanModule con config y progreso actuales."""
+        from .training_plan import TrainingPlanModule
+        trainer = TrainingPlanModule()
+        trainer.config = self.config
+        trainer.progress_data = self.progress_data
+        return trainer
+
     def get_auto_detected_week(self) -> int:
         """Auto-detectar la semana de entrenamiento actual basada en el progreso del usuario"""
-        # Si no hay datos de progreso, empezar en semana 1
+        today = datetime.datetime.now().strftime('%Y-%m-%d')
+        program_week = min(max(self.get_program_week_for_date(today), 1), 20)
+
         if not self.progress_data.get('completed_exercises'):
-            return 1
-        
-        # Buscar la semana más alta con progreso + 1 (la siguiente no completada)
+            return program_week
+
         max_week_with_progress = 0
-        
-        for date_str, exercises in self.progress_data.get('completed_exercises', {}).items():
+
+        for exercises in self.progress_data.get('completed_exercises', {}).values():
             for exercise_id, is_completed in exercises.items():
                 if is_completed and '_week' in exercise_id:
-                    # Extraer número de semana del ID del ejercicio
                     try:
                         week_part = exercise_id.split('_week')[-1]
-                        week_number = int(week_part)
+                        week_number = int(''.join(ch for ch in week_part if ch.isdigit()))
                         max_week_with_progress = max(max_week_with_progress, week_number)
                     except (IndexError, ValueError):
                         continue
-        
-        # Si hay progreso, verificar si la semana más alta está completada
+
         if max_week_with_progress > 0:
-            # Verificar completado de la semana más alta encontrada
             week_stats = self.get_week_completion_stats_for_week(max_week_with_progress)
-            
-            if week_stats['percentage'] >= 80:  # Si está mayormente completada
-                # Avanzar a la siguiente semana (máximo 20)
+            if week_stats['percentage'] >= 80:
                 return min(max_week_with_progress + 1, 20)
-            else:
-                # Continuar en la semana actual en progreso
-                return max_week_with_progress
-        
-        # Si no hay progreso significativo, empezar en semana 1
-        return 1
-    
+            return max_week_with_progress
+
+        return program_week
+
     def get_week_completion_stats_for_week(self, week_number: int) -> Dict[str, Any]:
-        """Obtener estadísticas de completado para una semana específica"""
-        # Obtener fechas de la semana
-        week_dates = self.get_week_dates(week_number)
-        if not week_dates or 'dates' not in week_dates:
-            return {'percentage': 0, 'completed_days': 0, 'total_days': 0}
-        
-        total_training_days = 0
-        completed_training_days = 0
-        
-        day_names = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
-        
-        for date_str in week_dates['dates']:
-            try:
-                date_obj = datetime.datetime.strptime(date_str, '%Y-%m-%d')
-                day_key = day_names[date_obj.weekday()]
-            except ValueError:
-                continue
-            
-            # Verificar si es día de entrenamiento según el nivel
-            week_info = self.get_week_info(week_number)
-            training_days = week_info.get('days', [])
-            
-            if day_key in training_days:
-                total_training_days += 1
-                
-                # Verificar si el día está completado
-                day_stats = self.get_day_completion_stats_internal(date_str, week_number)
-                if day_stats.get('percentage', 0) >= 80:  # Día considerado completado
-                    completed_training_days += 1
-        
+        """Porcentaje de días de entrenamiento completados (≥80%) en una semana del programa."""
+        week_stats = self._get_training_plan_module().get_week_completion_stats(week_number)
+        training_days = [day for day in week_stats.get('days', []) if not day.get('is_rest_day') and day.get('total', 0) > 0]
+        completed_training_days = sum(1 for day in training_days if day.get('percentage', 0) >= 80)
+        total_training_days = len(training_days)
         percentage = (completed_training_days / total_training_days * 100) if total_training_days > 0 else 0
-        
         return {
             'percentage': percentage,
             'completed_days': completed_training_days,
-            'total_days': total_training_days
+            'total_days': total_training_days,
         }
     
     def check_and_advance_week_automatically(self):
@@ -159,11 +134,7 @@ class BaseTrainer:
             return False
             
         # Calcular completado de la semana actual (fechas del programa, no rolling 7 días)
-        from .training_plan import TrainingPlanModule
-        tp = TrainingPlanModule()
-        tp.config = self.config
-        tp.progress_data = self.progress_data
-        completion_stats = tp.get_week_completion_stats(current_week)
+        completion_stats = self._get_training_plan_module().get_week_completion_stats(current_week)
         
         # Si está 100% completada, avanzar automáticamente
         if completion_stats['percentage'] >= 100:
@@ -1237,124 +1208,26 @@ class BaseTrainer:
             unique_exercise_id = f"{exercise_id}_week{week_number}"
         
         self.progress_data['completed_exercises'][date_str][unique_exercise_id] = completed
-        
-        # Guardar la semana en la que se marcó este ejercicio para futura referencia
-        if 'exercise_weeks' not in self.progress_data:
-            self.progress_data['exercise_weeks'] = {}
-        
-        if date_str not in self.progress_data['exercise_weeks']:
+
+        if completed:
+            if 'exercise_weeks' not in self.progress_data:
+                self.progress_data['exercise_weeks'] = {}
             self.progress_data['exercise_weeks'][date_str] = week_number
-        
-        # Solo actualizar la semana si es la primera vez que se marca algo en esta fecha
-        # o si estamos marcando como completado (no desmarcando)
-        if completed or date_str not in self.progress_data['exercise_weeks']:
-            self.progress_data['exercise_weeks'][date_str] = week_number
-        
-        # Recalcular días completados automáticamente
+
         self.update_completed_workouts()
         self.save_progress_data()
-        
-        # Forzar sincronización inmediata
         self.force_sync_progress()
+
+        if completed:
+            self.check_and_advance_week_automatically()
 
     def update_completed_workouts(self):
         """Actualizar la lista de días completados basándose en ejercicios marcados"""
-        if 'completed_exercises' not in self.progress_data:
-            return
-        
-        if 'completed_workouts' not in self.progress_data:
-            self.progress_data['completed_workouts'] = {}
-        
-        # Revisar cada fecha con ejercicios registrados
-        for date_str in self.progress_data['completed_exercises'].keys():
-            # Obtener semana para esta fecha
-            week_number = self.progress_data.get('exercise_weeks', {}).get(date_str, 1)
-            
-            # Calcular estadísticas de completado para este día
-            stats = self.get_day_completion_stats_internal(date_str, week_number)
-            
-            # Considerar el día como completado si tiene ≥80% de ejercicios realizados
-            # o si es un día de descanso
-            is_completed = stats['is_rest_day'] or stats['percentage'] >= 80
-            
-            # Obtener clave del mes
-            month_key = date_str[:7]  # YYYY-MM
-            
-            if month_key not in self.progress_data['completed_workouts']:
-                self.progress_data['completed_workouts'][month_key] = []
-            
-            # Añadir o remover de la lista según el estado
-            if is_completed and date_str not in self.progress_data['completed_workouts'][month_key]:
-                self.progress_data['completed_workouts'][month_key].append(date_str)
-            elif not is_completed and date_str in self.progress_data['completed_workouts'][month_key]:
-                self.progress_data['completed_workouts'][month_key].remove(date_str)
-    
+        self._get_training_plan_module().update_completed_workouts()
+
     def get_day_completion_stats_internal(self, date_str: str, week_number: int) -> Dict[str, Any]:
-        """Método interno para calcular estadísticas de completado de un día"""
-        # Obtener plan del día
-        week_info = self.get_week_info(week_number)
-        
-        if week_number <= 4:
-            week_key = f"semana{week_number}"
-            if week_key not in self.config.get('weekly_schedule', {}):
-                return {'completed': 0, 'total': 0, 'percentage': 100, 'exercises': [], 'muscle_groups': [], 'is_rest_day': True}
-            week_plan = self.config['weekly_schedule'][week_key]
-        else:
-            # Para semanas avanzadas, necesitamos importar el módulo training_plan
-            try:
-                from .training_plan import TrainingPlanModule
-                trainer = TrainingPlanModule()
-                trainer.config = self.config
-                trainer.progress_data = self.progress_data
-                week_plan = trainer.generate_advanced_week(week_number)
-            except:
-                return {'completed': 0, 'total': 0, 'percentage': 100, 'exercises': [], 'muscle_groups': [], 'is_rest_day': True}
-        
-        # Determinar día de la semana
-        date_obj = datetime.datetime.strptime(date_str, '%Y-%m-%d')
-        day_names = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
-        day_key = day_names[date_obj.weekday()]
-        
-        muscle_groups = week_plan.get(day_key, [])
-        
-        # Si no hay grupos musculares programados, es día de descanso
-        if not muscle_groups:
-            return {'completed': 0, 'total': 0, 'percentage': 100, 'exercises': [], 'muscle_groups': [], 'is_rest_day': True}
-        
-        total_exercises = 0
-        completed_exercises = 0
-        exercise_list = []
-        
-        for muscle_group in muscle_groups:
-            if muscle_group in self.config.get('exercises', {}):
-                # USAR lista planificada que alterna antebrazos
-                planned = self.get_planned_exercises_for_group(muscle_group, day_key, week_number)
-                for exercise in planned:
-                    exercise_id = f"{muscle_group}_{exercise['name']}_{day_key}_week{week_number}"
-                    is_completed = self.is_exercise_completed(date_str, exercise_id, week_number)
-                    
-                    exercise_list.append({
-                        'name': exercise['name'],
-                        'muscle_group': muscle_group,
-                        'completed': is_completed
-                    })
-                    
-                    total_exercises += 1
-                    if is_completed:
-                        completed_exercises += 1
-                    if is_completed:
-                        completed_exercises += 1
-        
-        percentage = (completed_exercises / total_exercises * 100) if total_exercises > 0 else 100
-        
-        return {
-            'completed': completed_exercises,
-            'total': total_exercises,
-            'percentage': percentage,
-            'exercises': exercise_list,
-            'muscle_groups': muscle_groups,
-            'is_rest_day': False
-        }
+        """Estadísticas de completado de un día (delegado al plan de entrenamiento)."""
+        return self._get_training_plan_module().get_day_completion_stats(date_str, week_number)
 
     def render_exercise_details(self, exercise: Dict[str, Any], muscle_group: str, day_key: str, show_videos: bool, show_instructions: bool, show_tips: bool, week_number: int | None = None):
         """Renderizar detalles de un ejercicio completo"""

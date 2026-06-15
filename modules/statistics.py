@@ -167,14 +167,10 @@ class StatisticsModule(BaseTrainer):
     # HELPERS ACTUALIZADOS PARA NUEVA LÓGICA
     # ------------------------------------------------------------------
     def _get_training_day_stats(self, date_str: str) -> dict:
-        """Obtener stats de un día usando la semana correcta.
-        Usa exercise_weeks si existe; si no, intenta mapeo calendario.
-        """
-        week_number = self.progress_data.get('exercise_weeks', {}).get(date_str)
-        if not week_number:
-            week_number = self.get_calendar_week_for_date(date_str)
+        """Obtener stats de un día usando la semana del programa para esa fecha."""
+        week_number = self.get_program_week_for_date(date_str)
         try:
-            return self.get_day_completion_stats_internal(date_str, week_number)
+            return self._get_training_plan_module().get_day_completion_stats(date_str, week_number)
         except Exception:
             return {'completed': 0, 'total': 0, 'percentage': 0, 'is_rest_day': True}
     

@@ -18,16 +18,16 @@ class ExerciseLibraryModule(BaseTrainer):
         """Filtrar ejercicios según criterios"""
         filtered = exercises.copy()
         
-        # Filtro por nivel
+        # Filtro por nivel (desbloqueados hasta el nivel seleccionado, como en el plan)
         if filters.get('level') and filters['level'] != 'Todos':
             level_map = {'Principiante': 1, 'Intermedio': 2, 'Avanzado': 3, 'Experto': 4}
-            filtered = [ex for ex in filtered if ex.get('difficulty_level', 1) == level_map[filters['level']]]
-        
-        # Filtro por equipamiento
+            max_level = level_map[filters['level']]
+            filtered = [ex for ex in filtered if ex.get('difficulty_level', 1) <= max_level]
+
+        filtered = self.filter_exercises_by_equipment(filtered)
+
         if filters.get('equipment') and filters['equipment'] != 'Todos':
             filtered = [ex for ex in filtered if ex.get('equipment') == filters['equipment']]
-        
-        # Búsqueda por nombre
         if filters.get('search'):
             search_term = filters['search'].lower()
             filtered = [ex for ex in filtered if search_term in ex.get('name', '').lower()]
