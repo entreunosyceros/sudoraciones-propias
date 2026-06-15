@@ -421,6 +421,7 @@ class ModernHeavyDutyTrainer:
             
             return show_videos, show_instructions, show_tips
     
+    # Renderizar pestañas principales
     def render_tabs(self):
         """Renderizar pestañas principales"""
         tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
@@ -434,6 +435,7 @@ class ModernHeavyDutyTrainer:
         
         return tab1, tab2, tab3, tab4, tab5, tab6
     
+    # Ejecutar la aplicación principal
     def run(self):
         """Ejecutar la aplicación principal"""
         try:
