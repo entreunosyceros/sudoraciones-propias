@@ -355,10 +355,14 @@ class ModernHeavyDutyTrainer:
                 
                 st.caption("⚠️ **Nota:** Cambiar la fecha recalculará el mapeo de todas las semanas")
             
-            # Mostrar información de la semana calendario actual
-            current_week_dates = self.base_trainer.get_week_dates_formatted(current_week)
+            # Mostrar rango de fechas de la semana de hoy en el calendario
+            today_week = ctx['today_week']
+            current_week_dates = self.base_trainer.get_week_dates_formatted(today_week)
             if current_week_dates and 'start_date' in current_week_dates:
-                st.caption(f"**Semana {current_week}:** {current_week_dates['start_date']} a {current_week_dates['end_date']}")
+                st.caption(
+                    f"**Semana {today_week} (hoy):** "
+                    f"{current_week_dates['start_date']} a {current_week_dates['end_date']}"
+                )
             
             # Estadísticas rápidas
             if self.base_trainer.progress_data.get('total_workouts', 0) > 0:
