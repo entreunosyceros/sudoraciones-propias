@@ -168,7 +168,7 @@ class StatisticsModule(BaseTrainer):
     # ------------------------------------------------------------------
     def _get_training_day_stats(self, date_str: str) -> dict:
         """Obtener stats de un día usando la semana del programa para esa fecha."""
-        week_number = self.get_program_week_for_date(date_str)
+        week_number = self.get_training_week_for_date(date_str)
         try:
             return self._get_training_plan_module().get_day_completion_stats(date_str, week_number)
         except Exception:

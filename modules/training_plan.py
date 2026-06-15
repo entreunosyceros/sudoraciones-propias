@@ -141,9 +141,7 @@ class TrainingPlanModule(BaseTrainer):
 
     def get_week_number_for_date(self, date_str: str) -> int:
         """Semana del programa a la que pertenece una fecha."""
-        if self.is_before_program_start(date_str):
-            return 1
-        return self.get_program_week_for_date(date_str)
+        return self.get_training_week_for_date(date_str)
 
     def update_completed_workouts(self):
         """Actualizar lista de entrenamientos completados basándose en ejercicios"""
@@ -720,7 +718,7 @@ class TrainingPlanModule(BaseTrainer):
         current_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
         self.reload_progress_data()
-        today_week = self.get_program_week_for_date(current_date)
+        today_week = self.get_training_week_for_date(current_date)
         day_stats = self.get_day_completion_stats(current_date, today_week)
         
         if day_stats['total'] > 0:

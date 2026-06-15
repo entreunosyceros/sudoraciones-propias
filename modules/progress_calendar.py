@@ -96,14 +96,12 @@ class ProgressModule(BaseTrainer):
 
     def get_week_number_for_date(self, date_str: str) -> int:
         """Semana del programa a la que pertenece una fecha (fuente canónica)."""
-        if self.is_before_program_start(date_str):
-            return 1
-        return self.get_program_week_for_date(date_str)
+        return self.get_training_week_for_date(date_str)
 
     def get_day_completion_stats(self, date_str: str, week_number: int | None = None) -> Dict[str, Any]:
         """Estadísticas de finalización para un día según la semana del programa."""
         if week_number is None:
-            week_number = self.get_program_week_for_date(date_str)
+            week_number = self.get_training_week_for_date(date_str)
 
         stats = self._get_training_plan_module().get_day_completion_stats(date_str, week_number)
         stats['calendar_week'] = week_number
@@ -126,7 +124,7 @@ class ProgressModule(BaseTrainer):
         if self.is_before_program_start(date_str):
             return self.get_pending_day_stats()
 
-        week_num = self.get_program_week_for_date(date_str)
+        week_num = self.get_training_week_for_date(date_str)
         from .training_plan import TrainingPlanModule
         tp = TrainingPlanModule()
         tp.config = self.config
@@ -411,7 +409,7 @@ class ProgressModule(BaseTrainer):
         for i in range(60):
             check_date = today - datetime.timedelta(days=i)
             date_str = check_date.strftime('%Y-%m-%d')
-            week_num = self.get_program_week_for_date(date_str)
+            week_num = self.get_training_week_for_date(date_str)
             day_stats = self._get_training_plan_module().get_day_completion_stats(date_str, week_num)
             if day_stats.get('is_rest_day'):
                 continue  # descanso ignora

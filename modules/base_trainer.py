@@ -142,25 +142,35 @@ class BaseTrainer:
         trainer.progress_data = self.progress_data
         return trainer
 
-    def get_auto_detected_week(self) -> int:
-        """Auto-detectar la semana de entrenamiento actual basada en el progreso del usuario"""
-        today = datetime.datetime.now().strftime('%Y-%m-%d')
-        program_week = min(max(self.get_program_week_for_date(today), 1), 20)
+    def has_training_progress(self) -> bool:
+        """True si el usuario ha completado al menos un ejercicio."""
+        for exercises in self.progress_data.get('completed_exercises', {}).values():
+            if any(exercises.values()):
+                return True
+        return False
 
-        if not self.progress_data.get('completed_exercises'):
-            return program_week
-
-        max_week_with_progress = 0
-
+    def _get_max_week_with_progress(self) -> int:
+        """Mayor número de semana con al menos un ejercicio completado."""
+        max_week = 0
         for exercises in self.progress_data.get('completed_exercises', {}).values():
             for exercise_id, is_completed in exercises.items():
                 if is_completed and '_week' in exercise_id:
                     try:
                         week_part = exercise_id.split('_week')[-1]
                         week_number = int(''.join(ch for ch in week_part if ch.isdigit()))
-                        max_week_with_progress = max(max_week_with_progress, week_number)
+                        max_week = max(max_week, week_number)
                     except (IndexError, ValueError):
                         continue
+        return max_week
+
+    def get_auto_detected_week(self) -> int:
+        """Auto-detectar la semana de entrenamiento actual basada en el progreso del usuario."""
+        if not self.has_training_progress():
+            return 1
+
+        today = datetime.datetime.now().strftime('%Y-%m-%d')
+        program_week = min(max(self.get_calendar_week_for_date(today), 1), 20)
+        max_week_with_progress = self._get_max_week_with_progress()
 
         if max_week_with_progress > 0:
             week_stats = self.get_week_completion_stats_for_week(max_week_with_progress)
@@ -588,7 +598,7 @@ class BaseTrainer:
         """Contexto unificado de semanas: calendario, selector y auto-detección."""
         today_str = datetime.datetime.now().strftime('%Y-%m-%d')
         today_date = datetime.datetime.now().date()
-        today_week = self.get_program_week_for_date(today_str)
+        today_week = self.get_training_week_for_date(today_str)
         selector_week = int(st.session_state.get('current_week', 1))
         auto_week = self.get_auto_detected_week()
         today_day_key = self.DAY_KEYS[today_date.weekday()]
@@ -1123,6 +1133,19 @@ class BaseTrainer:
     def get_program_week_for_date(self, date_str: str) -> int:
         """Semana de entrenamiento del programa para una fecha (mapeo calendario)."""
         return self.get_calendar_week_for_date(date_str)
+
+    def get_training_week_for_date(self, date_str: str) -> int:
+        """Semana efectiva para planificar y marcar ejercicios."""
+        if self.is_before_program_start(date_str):
+            return 1
+        if not self.has_training_progress():
+            return 1
+
+        today = datetime.datetime.now().strftime('%Y-%m-%d')
+        if date_str == today:
+            return self.get_auto_detected_week()
+
+        return min(max(self.get_calendar_week_for_date(date_str), 1), 20)
 
     def get_pending_day_stats(self, week_number: int | None = None, is_future: bool = False) -> Dict[str, Any]:
         """Estadísticas vacías para días futuros o aún no alcanzados."""
