@@ -266,8 +266,13 @@ class TrainingPlanModule(BaseTrainer):
                 return complement
         return []
 
-    def get_detailed_instructions(self, exercise_name: str) -> str:
-        """Obtener instrucciones detalladas para todos los ejercicios"""
+    def get_detailed_instructions(
+        self,
+        exercise_name: str,
+        muscle_group: str = "",
+        exercise: Dict[str, Any] | None = None,
+    ) -> str:
+        """Obtener instrucciones detalladas para todos los ejercicios."""
         instructions = {
             # PECHO
             'Press de Banca con Mancuernas': "Acuéstate en el banco, baja las mancuernas lentamente hasta sentir estiramiento en el pecho, empuja hacia arriba con control.",
@@ -276,6 +281,9 @@ class TrainingPlanModule(BaseTrainer):
             'Aperturas con Mancuernas': "Acostado en el banco, abre los brazos en arco amplio manteniendo codos ligeramente flexionados, baja hasta sentir estiramiento en pecho.",
             'Press Inclinado con Barra': "En banco inclinado, presiona la barra trabajando pecho superior.",
             'Flexiones con Mancuernas': "Flexiones con las manos apoyadas en mancuernas para aumentar el rango de movimiento, baja profundo y sube con control.",
+            'Flexiones Profundas (Deficit Push-ups)': "Agarra las barras inferiores de las paralelas, cuerpo en plancha. Baja el pecho por debajo del nivel de las manos y empuja hasta extensión completa.",
+            'Fondos con Torso Inclinado': "En barras superiores, inclínate ligeramente hacia adelante. Baja controlado flexionando codos hasta ~90° y sube empujando con pecho y tríceps.",
+            'Fondos Clásicos (Dips)': "Soporte en barras superiores con brazos extendidos. Baja hasta que los hombros queden por debajo de los codos y sube hasta bloquear sin encoger hombros.",
 
             # ESPALDA
             'Remo con Mancuernas': "Torso paralelo al suelo, tira del codo hacia atrás llevando la mancuerna hacia las costillas.",
@@ -283,6 +291,11 @@ class TrainingPlanModule(BaseTrainer):
             'Peso Muerto con Mancuernas': "Pies separados, baja las mancuernas manteniendo la espalda recta, empuja con los talones para subir.",
             'Remo con Barra': "Inclinado hacia adelante, tira la barra hacia el abdomen apretando los omóplatos.",
             'Peso Muerto con Barra': "Levanta la barra desde el suelo manteniendo la espalda recta, empuja con las piernas y caderas.",
+            'Remo Invertido Clásico (Agarre Neutro)': "Cuerpo boca arriba entre paralelas, agarre neutro en barras superiores, talones en el suelo. Tira el pecho hacia las barras apretando omóplatos sin balancear el torso.",
+            'Remo Invertido Supino (Enfoque Dorsal y Bíceps)': "Igual que el remo invertido clásico, pero con palmas hacia la cara. Lleva los codos pegados al cuerpo al subir para enfatizar dorsal inferior y bíceps.",
+            'Remo Invertido con Pies Elevados': "Remo invertido con talones elevados en banco o silla. Mantén el cuerpo casi paralelo al suelo y tira hasta tocar el pecho las barras.",
+            'Remo Australiano en Tuck (Pies Suspendidos)': "Colgado de las barras superiores con rodillas al pecho. Desde suspensión, tira el torso hacia arriba llevando el pecho a las manos.",
+            'Encogimientos Escapulares en Inversión': "Colgado boca arriba con brazos estirados. Junta y separa las escápulas elevando el pecho unos centímetros, sin flexionar codos.",
 
             # HOMBROS
             'Press Militar con Mancuernas': "De pie, mancuernas a la altura de los hombros, empuja hacia arriba hasta extensión completa.",
@@ -290,6 +303,8 @@ class TrainingPlanModule(BaseTrainer):
             'Elevaciones Frontales': "De pie, eleva las mancuernas al frente hasta la altura de los hombros alternando brazos.",
             'Press Arnold': "Combina rotación y press vertical, inicia con palmas hacia ti y rota mientras presionas hacia arriba.",
             'Elevaciones Posteriores': "Inclinado hacia adelante, eleva las mancuernas hacia atrás trabajando el deltoides posterior.",
+            'Flexiones de Pica (Pike Push-ups)': "Pies en el suelo, caderas altas formando una V. Manos en agarres inferiores, baja la cabeza entre las barras y empuja hacia arriba como un press vertical.",
+            'Soporte Isométrico (Soporte de Fondos)': "Arriba del todo en paralelas con codos bloqueados. Deprime hombros (baja escápulas) y mantén el cuerpo estable el tiempo indicado.",
 
             # BRAZOS
             'Curl de Bíceps': "Brazos extendidos, codos pegados al torso, flexiona llevando las mancuernas hacia los hombros.",
@@ -297,6 +312,8 @@ class TrainingPlanModule(BaseTrainer):
             'Extensiones de Tríceps': "Acostado, codos fijos apuntando al techo, baja la mancuerna hacia la frente flexionando antebrazos.",
             'Fondos en Silla': "Manos en el borde de una silla/banco, codos hacia atrás, baja controlado y sube extendiendo tríceps.",
             'Curl 21s': "7 repeticiones parciales de la mitad inferior, 7 de la mitad superior y 7 completas sin descanso.",
+            'Flexiones de Tríceps (Agarre Neutro)': "Manos en agarres inferiores con agarre neutro, cuerpo en plancha. Flexiona codos llevando el pecho hacia las barras y extiende con control.",
+            'Fondos con Enfoque en Tríceps': "En barras superiores, torso vertical y codos pegados al cuerpo. Baja solo hasta ~90° y sube extendiendo tríceps sin inclinarte hacia adelante.",
 
             # ANTEBRAZOS
             'Curl de Muñeca': "Sentado, antebrazos apoyados, palmas hacia arriba; flexiona solo las muñecas elevando la mancuerna y baja controlado.",
@@ -322,17 +339,99 @@ class TrainingPlanModule(BaseTrainer):
             'Plancha': "Antebrazos en el suelo, cuerpo en línea recta, mantén la posición.",
             'Plancha Lateral': "De lado, apoyado en antebrazo, mantén el cuerpo recto lateralmente.",
             'Plancha con Elevación de Brazos': "Desde plancha, alterna elevando un brazo al frente manteniendo la estabilidad del core.",
+            'Elevaciones de Rodillas en Paralelas': "Soporte en barras superiores con brazos extendidos. Eleva rodillas al pecho de forma controlada sin balancear el torso y baja lentamente.",
+
+            # ABDOMINALES AVANZADOS
             'Abdominales Bajas': "Acostado boca arriba, manos bajo la espalda baja, eleva las piernas hacia el pecho manteniendo control.",
             'Abdominales Laterales': "De lado, eleva el torso hacia la cadera, trabajando los oblicuos con movimiento controlado.",
             'V-Ups': "Acostado, eleva simultáneamente piernas y torso formando una V, ejercicio avanzado de core.",
+            'Elevaciones de Piernas Estiradas en Paralelas': "Colgado de paralelas con piernas estiradas. Eleva las piernas hasta formar 90° con el torso, bajando sin impulso.",
+            'L-Sit Hold en Paralelas': "Empuja hacia arriba, eleva piernas estiradas a 90° y mantén la posición en L con escápulas deprimidas y core activo.",
+            'L-Sit a Knee Raise Dinámico': "Inicia en L-Sit; cuando fatigues, flexiona rodillas hacia el pecho de forma controlada hasta completar las repeticiones.",
+
+            # CALENTAMIENTO
+            'Rotaciones de Hombros': "De pie, realiza círculos amplios con los hombros: adelante, arriba, atrás y abajo. Repite en ambas direcciones.",
+            'Círculos de Caderas': "Manos en la cadera, dibuja círculos amplios con la pelvis manteniendo el tronco estable.",
+            'Rotaciones de Cuello': "Inclina suavemente la cabeza a cada lado y realiza rotaciones lentas sin forzar el rango.",
+            'Rotaciones de Brazos': "Brazos extendidos, haz círculos amplios hacia adelante y luego hacia atrás.",
+            'Balanceo de Piernas': "Apoyado en una pierna, balancea la otra de adelante hacia atrás con control, sin arquear la espalda.",
+            'Elevaciones de Rodillas': "Marcha en el sitio elevando rodillas hasta la altura de la cadera, alternando piernas con ritmo constante.",
+            'Jumping Jacks Suaves': "Salta abriendo piernas y brazos a la vez; aterriza suave y mantén un ritmo moderado.",
+
+            # ESTIRAMIENTO
+            'Estiramiento de Pectorales': "Brazo apoyado en pared o marco a 90°, gira el cuerpo alejándote hasta sentir tensión en el pecho.",
+            'Estiramiento de Dorsales': "Agarra una barra o superficie elevada, inclínate hacia atrás dejando que la espalda se alargue.",
+            'Estiramiento de Hombros': "Lleva un brazo cruzado al pecho y presiona suavemente con el antebrazo opuesto.",
+            'Estiramiento de Tríceps': "Lleva un codo detrás de la cabeza, agarra el codo con la otra mano y tira suavemente.",
+            'Estiramiento de Isquiotibiales': "Pierna extendida, inclínate desde la cadera hacia el pie sin redondear la espalda.",
+            'Estiramiento de Cuádriceps': "De pie, agarra el pie por detrás y acércalo al glúteo manteniendo rodillas juntas.",
+            'Estiramiento de Gemelos': "Pierna atrás con talón en el suelo, inclínate hacia la pared o adelante hasta sentir el gemelo.",
+            'Estiramiento de Glúteos': "Sentado, cruza un tobillo sobre la rodilla opuesta e inclínate hacia adelante.",
+            'Estiramiento de Cadera': "Zancada profunda con rodilla trasera en el suelo, baja la cadera manteniendo el pecho erguido.",
+            'Estiramiento de Espalda Baja': "Acostado boca arriba, lleva rodillas al pecho y abrázalas; mece suavemente si te resulta cómodo.",
+
+            # MOVILIDAD
+            'Gato-Camello': "En cuatro patas, alterna arquear la espalda (mirada arriba) y redondearla (mirada al ombligo).",
+            'Bird Dog': "En cuatro patas, extiende brazo y pierna opuestos en línea con el torso. Mantén caderas estables.",
+            '90/90 Hip Switch': "Sentado con ambas piernas a 90°, rota las caderas llevando las rodillas de un lado al otro con control.",
+            'Rotaciones Torácicas': "En cuatro patas, mano detrás de la cabeza, rota el torso abriendo el codo hacia el techo.",
+            'Dislocaciones de Hombro': "Con palo o mancuerna ligera, pasa los brazos de frente a espalda con agarre amplio y movimiento lento.",
+            'Círculos de Tobillo': "Apoyado o sentado, dibuja círculos con el pie en ambas direcciones.",
+            'Sentadilla Profunda': "Pies anchura de hombros, baja a sentadilla profunda y mantén la posición respirando con calma.",
+            "World's Greatest Stretch": "Zancada profunda, apoya el codo en el suelo, rota el torso y extiende el brazo al cielo.",
 
             # CARDIO
             'Bicicleta Estática': "Ajusta el asiento, mantén la espalda recta, pedalea con movimiento fluido."
         }
-        return instructions.get(exercise_name, f"Instrucciones para '{exercise_name}' próximamente disponibles.")
+        if exercise_name in instructions:
+            return instructions[exercise_name]
+        return self._infer_instructions(exercise_name, muscle_group, exercise)
 
-    def get_exercise_tips(self, exercise_name: str) -> str:
-        """Obtener consejos específicos para todos los ejercicios"""
+    def _infer_instructions(
+        self,
+        exercise_name: str,
+        muscle_group: str,
+        exercise: Dict[str, Any] | None,
+    ) -> str:
+        """Instrucciones por defecto según grupo muscular o descripción del ejercicio."""
+        description = (exercise or {}).get('description', '').strip()
+        if description:
+            prefix = {
+                'calentamiento': 'Calentamiento: ',
+                'estiramiento': 'Estiramiento: ',
+                'movilidad': 'Movilidad: ',
+            }.get(muscle_group, '')
+            return f"{prefix}{description} Ejecuta el movimiento de forma controlada y con respiración continua."
+
+        group_defaults = {
+            'calentamiento': f"Realiza '{exercise_name}' con movimientos amplios y progresivos, sin forzar el rango articular.",
+            'estiramiento': f"Mantén '{exercise_name}' en tensión moderada (sin dolor) el tiempo indicado, respirando de forma profunda.",
+            'movilidad': f"En '{exercise_name}', prioriza control y amplitud de movimiento por encima de la velocidad.",
+            'cardio': f"En '{exercise_name}', mantén un ritmo constante y postura correcta durante toda la sesión.",
+        }
+        if muscle_group in group_defaults:
+            return group_defaults[muscle_group]
+
+        name_lower = exercise_name.lower()
+        if 'paralelas' in name_lower or 'fondos' in name_lower or 'invertido' in name_lower:
+            return (
+                f"En '{exercise_name}', mantén escápulas activas, core tenso y movimiento controlado "
+                "en todo el rango. Baja sin rebotes y sube hasta extensión completa."
+            )
+        if 'press' in name_lower or 'remo' in name_lower:
+            return f"En '{exercise_name}', espalda estable, movimiento controlado y sin impulso. Exhala en la fase de esfuerzo."
+        if 'sentadilla' in name_lower or 'zancada' in name_lower:
+            return f"En '{exercise_name}', pecho erguido, peso en talones y rodillas alineadas con los pies."
+
+        return f"Realiza '{exercise_name}' con técnica controlada, rango de movimiento completo y sin compensaciones."
+
+    def get_exercise_tips(
+        self,
+        exercise_name: str,
+        muscle_group: str = "",
+        exercise: Dict[str, Any] | None = None,
+    ) -> str:
+        """Obtener consejos específicos para todos los ejercicios."""
         tips = {
             # PECHO
             'Press de Banca con Mancuernas': "Mantén los omóplatos retraídos, no arquees excesivamente la espalda. Respiración: inhala al bajar, exhala al subir.",
@@ -341,6 +440,9 @@ class TrainingPlanModule(BaseTrainer):
             'Aperturas con Mancuernas': "No bajes demasiado para evitar lesiones en el hombro. Mantén codos ligeramente flexionados siempre.",
             'Press Inclinado con Barra': "Enfócate en la parte superior del pecho. No uses un agarre demasiado ancho.",
             'Flexiones con Mancuernas': "Ideal para aumentar rango de movimiento. No desciendas más de lo cómodo para tus hombros.",
+            'Flexiones Profundas (Deficit Push-ups)': "Mayor rango = más trabajo de pecho. Mantén el core activo y no dejes que los hombros se encojan al subir.",
+            'Fondos con Torso Inclinado': "La inclinación hacia adelante enfatiza pecho inferior. Controla la bajada; no rebotes en la posición baja.",
+            'Fondos Clásicos (Dips)': "Ejercicio exigente: progresa con asistencia si hace falta. Hombros abajo y atrás, codos a ~45° del cuerpo.",
 
             # ESPALDA
             'Remo con Mancuernas': "Inicia el movimiento con los músculos de la espalda, no gires el torso. Aprieta omóplatos al final.",
@@ -348,6 +450,11 @@ class TrainingPlanModule(BaseTrainer):
             'Peso Muerto con Mancuernas': "Mantén la barra cerca del cuerpo, pecho arriba, peso en los talones.",
             'Remo con Barra': "Espalda recta, no redondees la columna. El movimiento viene de los codos, no de los brazos.",
             'Peso Muerto con Barra': "Ejercicio muy técnico. Empieza con poco peso y perfecciona la técnica. Bisagra de cadera, no sentadilla.",
+            'Remo Invertido Clásico (Agarre Neutro)': "Aprieta omóplatos al final del tirón. Cuanto más horizontal el cuerpo, más difícil: ajusta la altura de los pies.",
+            'Remo Invertido Supino (Enfoque Dorsal y Bíceps)': "El agarre supino activa más bíceps. Evita que los hombros suban hacia las orejas.",
+            'Remo Invertido con Pies Elevados': "Variación avanzada: casi todo tu peso corporal. Mantén el cuerpo rígido como una tabla.",
+            'Remo Australiano en Tuck (Pies Suspendidos)': "Muy exigente, casi una dominada. Si no llegas arriba, haz encogimientos escapulares como progresión.",
+            'Encogimientos Escapulares en Inversión': "Movimiento pequeño pero clave para salud escapular. Sin flexionar codos; solo las escápulas se mueven.",
 
             # HOMBROS
             'Press Militar con Mancuernas': "Core contraído, no uses impulso con las piernas. Cuidado con la posición del cuello.",
@@ -355,6 +462,8 @@ class TrainingPlanModule(BaseTrainer):
             'Elevaciones Frontales': "Alterna los brazos para mejor estabilidad. No subas más allá de la altura del hombro.",
             'Press Arnold': "Ejercicio avanzado. Combina rotación con press, requiere mucho control. Empieza con peso ligero.",
             'Elevaciones Posteriores': "Mantente inclinado durante todo el movimiento. Enfoca en deltoides posterior, no en trápezos.",
+            'Flexiones de Pica (Pike Push-ups)': "Cuanto más verticales las caderas, más trabajo de hombros. Progresa elevando los pies si dominas la versión básica.",
+            'Soporte Isométrico (Soporte de Fondos)': "Fortalece estabilidad de hombros. Si cuelgan, practica deprimir escápulas antes de aguantar tiempo.",
 
             # BRAZOS
             'Curl de Bíceps': "Mantén los codos fijos, no balancees el cuerpo. Contracción completa en la parte superior.",
@@ -362,6 +471,8 @@ class TrainingPlanModule(BaseTrainer):
             'Extensiones de Tríceps': "Mantén los brazos superiores fijos, cuidado con el peso cerca de la cabeza.",
             'Fondos en Silla': "Hombros abajo y atrás; evita encogerte. No desciendas más de lo cómodo para tus hombros.",
             'Curl 21s': "Técnica avanzada muy exigente. Sin descanso entre las 3 fases. Prepara brazos para congestión intensa.",
+            'Flexiones de Tríceps (Agarre Neutro)': "Agarre neutro reduce estrés en muñecas. Mantén codos cerca del cuerpo para aislar tríceps.",
+            'Fondos con Enfoque en Tríceps': "Torso lo más vertical posible. No inclines el pecho; si se activa el pecho, corrige la postura.",
 
             # ANTEBRAZOS
             'Curl de Muñeca': "Recorrido corto y controlado, pausa 1s arriba. No flexiones los codos; solo muñecas.",
@@ -387,14 +498,82 @@ class TrainingPlanModule(BaseTrainer):
             'Plancha': "Mantén la línea recta, si duele la espalda baja deténte. Respira normalmente.",
             'Plancha Lateral': "Progresa desde rodillas si es necesario. Mantén caderas elevadas.",
             'Plancha con Elevación de Brazos': "Ejercicio avanzado de estabilidad. Mantén las caderas sin rotar.",
+            'Elevaciones de Rodillas en Paralelas': "Evita el balanceo: sube con control y baja sin dejar caer las piernas. Core activo todo el tiempo.",
+
+            # ABDOMINALES AVANZADOS
             'Abdominales Bajas': "Enfócate en la parte baja del abdomen, no uses impulso. Movimiento lento y controlado.",
             'Abdominales Laterales': "Contrae los oblicuos, no hagas movimientos bruscos. Alterna los lados uniformemente.",
             'V-Ups': "Ejercicio muy avanzado. Requiere mucha fuerza de core. No uses impulso, todo debe ser controlado.",
+            'Elevaciones de Piernas Estiradas en Paralelas': "Más difícil que con rodillas flexionadas. Si pierdes control, vuelve a elevaciones de rodillas.",
+            'L-Sit Hold en Paralelas': "Empuja el suelo con las manos y deprime hombros. Si no mantienes la L, practica con rodillas flexionadas.",
+            'L-Sit a Knee Raise Dinámico': "Combina isometría y dinámica. La transición a rodillas es válida para agotar el core con buena técnica.",
+
+            # CALENTAMIENTO
+            'Rotaciones de Hombros': "Movimiento suave, sin dolor. Aumenta el rango gradualmente en cada serie.",
+            'Círculos de Caderas': "Ideal antes de piernas. Mantén el tronco quieto; solo la pelvis se mueve.",
+            'Rotaciones de Cuello': "Nunca fuerces: movimientos lentos. Evita hiperextensión hacia atrás.",
+            'Rotaciones de Brazos': "Empieza con círculos pequeños y amplía progresivamente.",
+            'Balanceo de Piernas': "Sujétate si pierdes equilibrio. Activa el glúteo de la pierna de apoyo.",
+            'Elevaciones de Rodillas': "Ritmo constante para elevar pulsaciones sin fatigar. Core ligeramente activo.",
+            'Jumping Jacks Suaves': "Versión controlada del jumping jack. Aterriza con rodillas flexibles, no bloqueadas.",
+
+            # ESTIRAMIENTO
+            'Estiramiento de Pectorales': "Tensión moderada, nunca dolor. Mantén 20-30 s y respira profundamente.",
+            'Estiramiento de Dorsales': "Relaja hombros y cuello. No rebotes; estira de forma estática.",
+            'Estiramiento de Hombros': "Presión suave con el antebrazo. Alterna brazos por igual.",
+            'Estiramiento de Tríceps': "Mantén el codo apuntando al techo. No fuerces la cabeza hacia adelante.",
+            'Estiramiento de Isquiotibiales': "Inclínate desde la cadera, no desde la lumbar. Rodilla puede estar ligeramente flexionada.",
+            'Estiramiento de Cuádriceps': "Rodillas juntas para mayor estiramiento. Apóyate en una pared si pierdes equilibrio.",
+            'Estiramiento de Gemelos': "Talón siempre en el suelo. Inclínate más para profundizar el estiramiento.",
+            'Estiramiento de Glúteos': "Espalda recta al inclinarte. Mantén la posición sin forzar la rodilla.",
+            'Estiramiento de Cadera': "Flexiona el glúteo de la pierna trasera para intensificar. Pecho erguido.",
+            'Estiramiento de Espalda Baja': "Movimiento suave. Si tienes molestias lumbares, reduce el rango.",
+
+            # MOVILIDAD
+            'Gato-Camello': "Sincroniza movimiento con la respiración: exhala al redondear, inhala al arquear.",
+            'Bird Dog': "Mantén caderas paralelas al suelo. Extiende brazo y pierna sin arquear la espalda.",
+            '90/90 Hip Switch': "Movimiento lento y controlado. Usa las manos de apoyo si la rotación es limitada.",
+            'Rotaciones Torácicas': "La rotación viene del tórax, no de la lumbar. Ojos siguen al codo.",
+            'Dislocaciones de Hombro': "Agarre amplio al principio; estrecha progresivamente. Peso muy ligero o palo de escoba.",
+            'Círculos de Tobillo': "Útil antes de sentadillas y zancadas. Ambas direcciones y ambos pies.",
+            'Sentadilla Profunda': "Pies planos en el suelo si es posible. Usa apoyo de manos delante para equilibrio.",
+            "World's Greatest Stretch": "Ejercicio completo: cadera, torácica e isquios. Mantén cada fase 2-3 segundos.",
 
             # CARDIO
             'Bicicleta Estática': "Cadencia constante, no te encorves sobre el manillar. Ajusta resistencia gradualmente."
         }
-        return tips.get(exercise_name, f"Consejos para '{exercise_name}' próximamente disponibles.")
+        if exercise_name in tips:
+            return tips[exercise_name]
+        return self._infer_tips(exercise_name, muscle_group, exercise)
+
+    def _infer_tips(
+        self,
+        exercise_name: str,
+        muscle_group: str,
+        exercise: Dict[str, Any] | None,
+    ) -> str:
+        """Consejos por defecto según grupo muscular o tipo de ejercicio."""
+        group_tips = {
+            'calentamiento': "Movimiento suave y progresivo. Aumenta la amplitud gradualmente. No debe doler.",
+            'estiramiento': "Tensión moderada, nunca dolor. Respira profundo y alterna lados por igual.",
+            'movilidad': "Calidad sobre velocidad. Mantén el core activo y el movimiento controlado.",
+            'cardio': "Hidrátate y mantén un ritmo sostenible. Ajusta intensidad según tu nivel.",
+            'gemelos': "Rango completo: estira abajo y contrae arriba con pausa breve.",
+            'abs': "El movimiento viene del core, no del impulso. Calidad sobre cantidad.",
+            'abs_avanzados': "Si pierdes la forma, reduce repeticiones o regresa a una variante más fácil.",
+        }
+        if muscle_group in group_tips:
+            return group_tips[muscle_group]
+
+        name_lower = exercise_name.lower()
+        if 'paralelas' in name_lower or 'fondos' in name_lower:
+            return "Deprime hombros y activa el core. Progresa con asistencia o menos repeticiones si la técnica se deteriora."
+        if 'invertido' in name_lower or 'remo' in name_lower:
+            return "Inicia el tirón con la espalda, no con los brazos. Aprieta omóplatos al final del movimiento."
+        if 'curl' in name_lower or 'tríceps' in name_lower or 'triceps' in name_lower:
+            return "Codos estables, sin balanceo del cuerpo. Contracción completa en cada repetición."
+
+        return "Prioriza la técnica sobre el peso o las repeticiones. Descansa lo necesario entre series."
 
     def get_week_plan(self, week_number: int) -> dict:
         """Obtener el plan semanal (config base o generado para semanas avanzadas)."""
@@ -486,7 +665,9 @@ class TrainingPlanModule(BaseTrainer):
         show_coverage: bool = True,
     ):
         """Renderizar calentamiento, cobertura y ejercicios de un día de entrenamiento."""
-        self.render_suggested_warmup(muscle_groups, day_key, week_number, show_videos)
+        self.render_suggested_warmup(
+            muscle_groups, day_key, week_number, show_videos, show_instructions, show_tips
+        )
         if show_coverage:
             self.render_rotation_coverage_for_day(muscle_groups, day_key, week_number)
 
@@ -568,6 +749,8 @@ class TrainingPlanModule(BaseTrainer):
         day_key: str,
         week_number: int,
         show_videos: bool,
+        show_instructions: bool = True,
+        show_tips: bool = True,
         compact: bool = False,
     ):
         """Mostrar calentamiento sugerido (biblioteca, no cuenta en el progreso del plan)."""
@@ -594,6 +777,12 @@ class TrainingPlanModule(BaseTrainer):
                     week_number,
                     show_video=show_videos,
                 )
+                if show_instructions:
+                    st.markdown("**🎯 Instrucciones:**")
+                    st.write(self.get_detailed_instructions(exercise['name'], 'calentamiento', exercise))
+                if show_tips:
+                    st.markdown("**💡 Consejos:**")
+                    st.write(self.get_exercise_tips(exercise['name'], 'calentamiento', exercise))
 
         if not compact:
             st.caption("Más opciones en 📚 Biblioteca → Calentamiento")
@@ -668,12 +857,12 @@ class TrainingPlanModule(BaseTrainer):
             
             with col2:
                 if show_instructions:
-                    instructions = self.get_detailed_instructions(exercise_name)
+                    instructions = self.get_detailed_instructions(exercise_name, muscle_group, exercise)
                     st.markdown("**🎯 Instrucciones:**")
                     st.write(instructions)
                 
                 if show_tips:
-                    tips = self.get_exercise_tips(exercise_name)
+                    tips = self.get_exercise_tips(exercise_name, muscle_group, exercise)
                     st.markdown("**💡 Consejos:**")
                     st.write(tips)
 
