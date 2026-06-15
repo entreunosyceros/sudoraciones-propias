@@ -587,8 +587,13 @@ class TrainingPlanModule(BaseTrainer):
             label = f"🔥 {exercise['name']} — {exercise.get('reps', '')}"
             with st.expander(label, expanded=compact):
                 st.write(exercise.get('description', ''))
-                if show_videos and exercise.get('youtube_url'):
-                    self.render_youtube_video(exercise['youtube_url'])
+                self.render_youtube_url_editor(
+                    exercise,
+                    'calentamiento',
+                    day_key,
+                    week_number,
+                    show_video=show_videos,
+                )
 
         if not compact:
             st.caption("Más opciones en 📚 Biblioteca → Calentamiento")
@@ -641,55 +646,14 @@ class TrainingPlanModule(BaseTrainer):
             st.markdown(f"**Series:** {display_sets} | **Reps:** {display_reps} | **Grupo:** {muscle_group.title()}")
         
         with st.expander(f"ℹ️ Ver detalles de {exercise_name}", expanded=False):
-            # Video de YouTube si está habilitado
-            youtube_url = exercise.get('youtube_url', '')
-            if youtube_url and show_videos:
-                # Determinar el tipo de video para mostrar el título apropiado
-                if 'shorts/' in youtube_url:
-                    st.markdown("### 🎥 Video Tutorial (Short)")
-                else:
-                    st.markdown("### 🎥 Video Tutorial")
-                self.render_youtube_video(youtube_url)
-            
-            # Editor de URL de YouTube
-            st.markdown("### 🔗 Configurar Video Tutorial")
-            input_key = self.generate_unique_key("youtube_url", muscle_group, exercise_name, day_key, st.session_state.current_week)
-            new_url = st.text_input(
-                "URL de YouTube:",
-                value=youtube_url,
-                key=input_key,
-                placeholder="Ej: https://www.youtube.com/shorts/35_gCUE3SmM"
+            self.render_youtube_url_editor(
+                exercise,
+                muscle_group,
+                day_key,
+                st.session_state.current_week,
+                show_video=show_videos,
             )
-            url_input = (new_url or "").strip()
-            
-            # Validación en tiempo real
-            if url_input:
-                is_valid, url_type = self.validate_youtube_url(url_input)
-                if is_valid:
-                    if url_type == "shorts":
-                        st.success("✅ YouTube Short válido")
-                    elif url_type == "video":
-                        st.success("✅ Video de YouTube válido")
-                    elif url_type == "short_url":
-                        st.success("✅ URL corta válida")
-                    elif url_type == "empty":
-                        st.info("ℹ️ URL vacía")
-                else:
-                    st.error("❌ URL no válida")
-            
-            # Botón para guardar URL
-            button_key = self.generate_unique_key("save_url", muscle_group, exercise_name, day_key, st.session_state.current_week)
-            if st.button(f"💾 Guardar URL", key=button_key):
-                is_valid, url_type = self.validate_youtube_url(url_input)
-                if is_valid:
-                    if self.update_exercise_youtube_url(muscle_group, exercise_name, url_input):
-                        st.success("✅ URL guardada correctamente")
-                        st.rerun()
-                    else:
-                        st.error("❌ Error al guardar")
-                else:
-                    st.error("❌ URL no válida")
-            
+
             # Información del ejercicio
             col1, col2 = st.columns([1, 1])
             

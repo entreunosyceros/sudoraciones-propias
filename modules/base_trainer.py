@@ -1674,6 +1674,56 @@ class BaseTrainer:
         except Exception as e:
             st.warning(f"No se pudo renderizar el video: {e}")
 
+    def render_youtube_url_editor(
+        self,
+        exercise: Dict[str, Any],
+        muscle_group: str,
+        *context_parts,
+        show_video: bool = True,
+    ) -> None:
+        """Mostrar y permitir editar la URL de YouTube de un ejercicio."""
+        exercise_name = exercise.get('name', '')
+        youtube_url = exercise.get('youtube_url', '')
+
+        if youtube_url and show_video:
+            title = "### 🎥 Video Tutorial (Short)" if 'shorts/' in youtube_url else "### 🎥 Video Tutorial"
+            st.markdown(title)
+            self.render_youtube_video(youtube_url)
+
+        st.markdown("### 🔗 Configurar Video Tutorial")
+        input_key = self.generate_unique_key("youtube_url", muscle_group, exercise_name, *context_parts)
+        new_url = st.text_input(
+            "URL de YouTube:",
+            value=youtube_url,
+            key=input_key,
+            placeholder="Ej: https://www.youtube.com/shorts/35_gCUE3SmM",
+        )
+        url_input = (new_url or "").strip()
+
+        if url_input:
+            is_valid, url_type = self.validate_youtube_url(url_input)
+            if is_valid:
+                if url_type == "shorts":
+                    st.success("✅ YouTube Short válido")
+                elif url_type == "video":
+                    st.success("✅ Video de YouTube válido")
+                elif url_type == "short_url":
+                    st.success("✅ URL corta válida")
+            else:
+                st.error("❌ URL no válida")
+
+        button_key = self.generate_unique_key("save_url", muscle_group, exercise_name, *context_parts)
+        if st.button("💾 Guardar URL", key=button_key):
+            is_valid, _url_type = self.validate_youtube_url(url_input)
+            if is_valid:
+                if self.update_exercise_youtube_url(muscle_group, exercise_name, url_input):
+                    st.success("✅ URL guardada correctamente")
+                    st.rerun()
+                else:
+                    st.error("❌ Error al guardar")
+            else:
+                st.error("❌ URL no válida")
+
     def update_exercise_youtube_url(self, muscle_group: str, exercise_name: str, new_url: str) -> bool:
         """Actualizar la URL de YouTube de un ejercicio tanto en memoria como en config.json"""
         try:
