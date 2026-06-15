@@ -398,6 +398,203 @@ class TrainingPlanModule(BaseTrainer):
         }
         return tips.get(exercise_name, f"Consejos para '{exercise_name}' próximamente disponibles.")
 
+    def get_week_plan(self, week_number: int) -> dict:
+        """Obtener el plan semanal (config base o generado para semanas avanzadas)."""
+        if week_number <= 4:
+            week_key = f"semana{week_number}"
+            return self.config.get('weekly_schedule', {}).get(week_key, {})
+        return self.generate_advanced_week(week_number)
+
+    DAY_DISPLAY_NAMES = {
+        'lunes': '🟢 LUNES',
+        'martes': '🔵 MARTES',
+        'miercoles': '🟡 MIÉRCOLES',
+        'jueves': '🟠 JUEVES',
+        'viernes': '🔴 VIERNES',
+        'sabado': '🟣 SÁBADO',
+        'domingo': '⚪ DOMINGO',
+    }
+
+    def render_level_transition_banner(self, week_number: int):
+        """Aviso al entrar en un nuevo nivel del programa."""
+        if not self.should_show_level_transition_banner(week_number):
+            return
+
+        level = (week_number - 1) // 4 + 1
+        info = self.LEVEL_TRANSITION_INFO.get(level)
+        if not info:
+            return
+
+        st.success(f"### 🆙 {info['title']}")
+        for change in info['changes']:
+            st.markdown(f"- {change}")
+
+        new_exercises = self.get_newly_unlocked_exercises(week_number)
+        if new_exercises:
+            with st.expander("🆕 Nuevos ejercicios desbloqueados", expanded=True):
+                for muscle_group, exercises in new_exercises.items():
+                    if exercises:
+                        label = self.MUSCLE_GROUP_LABELS_ES.get(muscle_group, muscle_group.title())
+                        st.markdown(f"**{label}:**")
+                        for exercise in exercises:
+                            level_emoji = ["", "🟢", "🟡", "🟠", "🔴"][exercise.get('difficulty_level', 1)]
+                            st.markdown(f"  • {level_emoji} {exercise['name']}")
+
+    def render_rotation_coverage_for_day(
+        self, muscle_groups: list[str], day_key: str, week_number: int
+    ):
+        """Resumen de cobertura del catálogo rotativo para los grupos del día."""
+        coverages = [
+            self.get_rotation_coverage_for_group(mg, day_key, week_number)
+            for mg in muscle_groups
+            if mg in self.config.get('exercises', {})
+        ]
+        if not coverages:
+            return
+
+        with st.expander("📊 Cobertura del catálogo (rotación)", expanded=False):
+            st.caption(
+                "Cuántos ejercicios desbloqueados has hecho al menos una vez · "
+                "hoy toca una selección de hasta 6 por grupo"
+            )
+            for cov in coverages:
+                if cov['pool_total'] <= 6:
+                    rotation_note = "Catálogo completo en sesión"
+                else:
+                    rotation_note = f"Hoy: {len(cov['today_names'])} de {cov['pool_total']} en rotación"
+
+                st.markdown(
+                    f"**{cov['label']}:** {cov['completed_once']}/{cov['pool_total']} "
+                    f"probados ({cov['coverage_pct']:.0f}%) · {rotation_note}"
+                )
+                if cov['never_done']:
+                    st.caption(f"Sin hacer aún: {', '.join(cov['never_done'][:6])}"
+                               + ("…" if len(cov['never_done']) > 6 else ""))
+                if cov['pool_total'] > len(cov['today_names']) and cov['rotating_other']:
+                    st.caption(
+                        f"En otras sesiones: {', '.join(cov['rotating_other'][:4])}"
+                        + ("…" if len(cov['rotating_other']) > 4 else "")
+                    )
+
+    def _render_training_day_content(
+        self,
+        muscle_groups: list[str],
+        day_key: str,
+        week_number: int,
+        day_date: str,
+        show_videos: bool,
+        show_instructions: bool,
+        show_tips: bool,
+        show_coverage: bool = True,
+    ):
+        """Renderizar calentamiento, cobertura y ejercicios de un día de entrenamiento."""
+        self.render_suggested_warmup(muscle_groups, day_key, week_number, show_videos)
+        if show_coverage:
+            self.render_rotation_coverage_for_day(muscle_groups, day_key, week_number)
+
+        for muscle_group in muscle_groups:
+            if muscle_group not in self.config.get('exercises', {}):
+                continue
+            label = self.MUSCLE_GROUP_LABELS_ES.get(muscle_group, muscle_group.title())
+            st.markdown(f"#### 💪 {label}")
+            planned_list = self.get_planned_exercises_for_group(muscle_group, day_key, week_number)
+            for exercise in planned_list:
+                self.render_exercise_details(
+                    exercise,
+                    muscle_group,
+                    day_key,
+                    show_videos,
+                    show_instructions,
+                    show_tips,
+                    week_number,
+                    day_date=day_date,
+                )
+
+    def render_today_session(
+        self,
+        show_videos: bool,
+        show_instructions: bool,
+        show_tips: bool,
+    ):
+        """Vista principal: sesión de entrenamiento de hoy según el calendario del programa."""
+        ctx = self.get_week_context()
+        today_week = ctx['today_week']
+        today = ctx['today']
+        day_key = ctx['today_day_key']
+        week_plan = self.get_week_plan(today_week)
+        muscle_groups = week_plan.get(day_key, [])
+        week_info = ctx['week_info_today']
+
+        st.markdown("## 🏋️ Sesión de hoy")
+        st.markdown(
+            f"**{ctx['today_formatted']}** · Semana **{today_week}** del programa · "
+            f"{week_info['level_name']} · Ciclo {week_info['week_in_cycle']}/4"
+        )
+
+        if not ctx['is_selector_aligned']:
+            st.info(
+                f"Estás **entrenando hoy** con la Semana **{today_week}**. "
+                f"El selector de exploración está en Semana **{ctx['selector_week']}**."
+            )
+
+        self.render_level_transition_banner(today_week)
+
+        if not muscle_groups:
+            st.markdown("""
+            <div class="rest-day">
+                <h3>🛌 Día de descanso 🛌</h3>
+                <p>Recuperación activa — estiramiento ligero, caminata o movilidad en la biblioteca</p>
+            </div>
+            """, unsafe_allow_html=True)
+            return
+
+        groups_label = ", ".join(
+            self.MUSCLE_GROUP_LABELS_ES.get(mg, mg.title()) for mg in muscle_groups
+        )
+        st.caption(f"Grupos de hoy: {groups_label}")
+
+        self._render_training_day_content(
+            muscle_groups,
+            day_key,
+            today_week,
+            today,
+            show_videos,
+            show_instructions,
+            show_tips,
+            show_coverage=True,
+        )
+
+    def render_suggested_warmup(
+        self,
+        muscle_groups: list[str],
+        day_key: str,
+        week_number: int,
+        show_videos: bool,
+        compact: bool = False,
+    ):
+        """Mostrar calentamiento sugerido (biblioteca, no cuenta en el progreso del plan)."""
+        warmups = self.get_suggested_warmup_exercises(muscle_groups, day_key, week_number)
+        if not warmups:
+            return
+
+        if compact:
+            st.markdown("**🔥 Calentamiento sugerido (opcional)**")
+        else:
+            st.markdown("#### 🔥 Calentamiento sugerido")
+        st.caption(
+            "De la biblioteca · 2-3 ejercicios según los grupos de hoy · no cuenta en el progreso del plan"
+        )
+
+        for exercise in warmups:
+            label = f"🔥 {exercise['name']} — {exercise.get('reps', '')}"
+            with st.expander(label, expanded=compact):
+                st.write(exercise.get('description', ''))
+                if show_videos and exercise.get('youtube_url'):
+                    self.render_youtube_video(exercise['youtube_url'])
+
+        if not compact:
+            st.caption("Más opciones en 📚 Biblioteca → Calentamiento")
+
     def render_exercise_details(self, exercise: Dict[str, Any], muscle_group: str, day_key: str, show_videos: bool, show_instructions: bool, show_tips: bool, week_number: int | None = None, day_date: str | None = None):
         """Renderizar detalles de un ejercicio completo"""
         if week_number is None:
@@ -528,7 +725,7 @@ class TrainingPlanModule(BaseTrainer):
         
         if day_stats['total'] > 0:
             st.markdown("### 📊 Progreso de Hoy")
-            
+
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric("Ejercicios Completados", day_stats['completed'], f"de {day_stats['total']}")
@@ -563,87 +760,78 @@ class TrainingPlanModule(BaseTrainer):
             st.warning("⚠️ No hay ejercicios programados para hoy. Revisa la configuración de tu semana.")
 
     def render_training_plan(self, show_videos: bool, show_instructions: bool, show_tips: bool):
-        """Renderizar plan de entrenamiento completo"""
-        current_week = st.session_state.current_week
-        
-        # Obtener información del nivel y semana
-        week_info = self.get_week_info(current_week)
-        
-        # Generar plan de la semana (básico o avanzado)
-        if current_week <= 4:
-            week_key = f"semana{current_week}"
-            if 'weekly_schedule' not in self.config or week_key not in self.config['weekly_schedule']:
-                st.error(f"❌ No se encontró configuración para {week_key}")
-                return
-            week_plan = self.config['weekly_schedule'][week_key]
+        """Renderizar plan de entrenamiento: sesión de hoy + semana completa opcional."""
+        ctx = self.get_week_context()
+        current_week = ctx['selector_week']
+
+        if 'plan_view_mode' not in st.session_state:
+            st.session_state.plan_view_mode = 'Hoy'
+
+        view_mode = st.radio(
+            "Vista del plan:",
+            options=['Hoy', 'Semana completa'],
+            horizontal=True,
+            key='plan_view_mode',
+            help="'Hoy' usa la semana del calendario. 'Semana completa' usa la semana del selector.",
+        )
+
+        st.markdown("---")
+        self.render_daily_progress_stats(current_week)
+        st.markdown("---")
+
+        if view_mode == 'Hoy':
+            self.render_today_session(show_videos, show_instructions, show_tips)
         else:
-            # Generar semana avanzada automáticamente
-            week_plan = self.generate_advanced_week(current_week)
-        
-        # Mostrar información de la semana actual
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            st.info(f"📅 **Semana {current_week}** - {week_info['level_name']}")
-        with col2:
-            if current_week > 4:
-                st.success(f"🎉 ¡Progresión automática activa!")
-        
-        st.markdown(f"*{week_info['level_description']}*")
-        
-        # Panel de información del nivel con ejercicios disponibles
-        st.markdown("### 🎯 Información del Nivel")
+            self._render_full_week_plan(current_week, show_videos, show_instructions, show_tips)
+
+    def _render_full_week_plan(
+        self,
+        current_week: int,
+        show_videos: bool,
+        show_instructions: bool,
+        show_tips: bool,
+    ):
+        """Vista de la semana seleccionada en el selector (repaso o adelanto)."""
+        ctx = self.get_week_context()
+        week_info = self.get_week_info(current_week)
+        week_plan = self.get_week_plan(current_week)
+        if current_week <= 4 and not week_plan:
+            st.error(f"❌ No se encontró configuración para semana{current_week}")
+            return
+
+        st.markdown(f"## 📅 Semana {current_week} — {week_info['level_name']}")
+        st.caption(week_info['level_description'])
+
+        if current_week != ctx['today_week']:
+            st.warning(
+                f"Explorando Semana **{current_week}**. "
+                f"El entrenamiento de hoy ({ctx['today_formatted']}) es Semana **{ctx['today_week']}**."
+            )
+        else:
+            st.success(f"Semana alineada con el calendario de hoy.")
+
+        self.render_level_transition_banner(current_week)
+
         col1, col2, col3 = st.columns(3)
-        
         with col1:
-            st.metric("Nivel Actual", week_info['level_name'])
+            st.metric("Nivel", week_info['level_name'])
         with col2:
-            st.metric("Semana en Ciclo", f"{week_info['week_in_cycle']}/4")
+            st.metric("Semana en ciclo", f"{week_info['week_in_cycle']}/4")
         with col3:
-            st.metric("Semanas Completadas", week_info['total_weeks_completed'])
-        
-        st.markdown(f"**{week_info['level_description']}**")
-        
-        # Mostrar información de ejercicios disponibles por nivel
+            st.metric("Semanas completadas", week_info['total_weeks_completed'])
+
         current_level = (current_week - 1) // 4 + 1
         self._show_available_exercises_info(current_level)
-        
-        # Mostrar ejercicios desbloqueados
-        new_exercises = self.get_newly_unlocked_exercises(current_week)
-        if new_exercises:
-            with st.expander("🆕 Nuevos ejercicios desbloqueados", expanded=True):
-                for muscle_group, exercises in new_exercises.items():
-                    if exercises:
-                        st.markdown(f"**💪 {muscle_group.title()}:**")
-                        for exercise in exercises:
-                            difficulty_emoji = ["", "🟢", "🟡", "🟠", "🔴"][exercise.get('difficulty_level', 1)]
-                            st.markdown(f"  • {difficulty_emoji} {exercise['name']}")
-        
-        # Mostrar progreso si es una semana avanzada
+
         if current_week > 4:
             progress_bar = min(week_info['week_in_cycle'] / 4, 1.0)
             st.progress(progress_bar, text=f"Progreso en nivel actual: {week_info['week_in_cycle']}/4 semanas")
-        
-        # Estadísticas del día (mover arriba)
-        st.markdown("---")
-        self.render_daily_progress_stats(current_week)
 
-        # Placeholder para el panel semanal (se rellena después de listar ejercicios)
-        weekly_panel_placeholder = st.empty()
-
-        # Renderizar calendario de entrenamiento debajo de las estadísticas diarias
         week_dates = self.get_week_dates(current_week)
         dates_list = week_dates.get('dates', []) if week_dates else []
-        day_names = {
-            'lunes': '🟢 LUNES',
-            'martes': '🔵 MARTES', 
-            'miercoles': '🟡 MIÉRCOLES',
-            'jueves': '🟠 JUEVES',
-            'viernes': '🔴 VIERNES',
-            'sabado': '🟣 SÁBADO',
-            'domingo': '⚪ DOMINGO'
-        }
-        day_order = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
-        for day_index, day_date in enumerate(dates_list):
+        day_order = self.DAY_KEYS
+
+        for day_date in dates_list:
             try:
                 date_obj = datetime.datetime.strptime(day_date, '%Y-%m-%d')
                 day_key = day_order[date_obj.weekday()]
@@ -652,9 +840,13 @@ class TrainingPlanModule(BaseTrainer):
                 continue
 
             muscle_groups = week_plan.get(day_key, [])
-            day_display = day_names.get(day_key, day_key.upper())
-            day_display_with_date = f"{day_display} - {formatted_date}"
-            st.markdown(f"### {day_display_with_date}")
+            day_display = self.DAY_DISPLAY_NAMES.get(day_key, day_key.upper())
+            is_today = day_date == ctx['today'] and current_week == ctx['today_week']
+            title = f"### {day_display} - {formatted_date}"
+            if is_today:
+                title += " · **HOY**"
+            st.markdown(title)
+
             if not muscle_groups:
                 st.markdown("""
                 <div class="rest-day">
@@ -663,59 +855,60 @@ class TrainingPlanModule(BaseTrainer):
                 </div>
                 """, unsafe_allow_html=True)
                 continue
-            for muscle_group in muscle_groups:
-                if muscle_group in self.config['exercises']:
-                    st.markdown(f"#### 💪 {muscle_group.title()}")
-                    planned_list = self.get_planned_exercises_for_group(muscle_group, day_key, current_week)
-                    for exercise in planned_list:
-                        self.render_exercise_details(
-                            exercise,
-                            muscle_group,
-                            day_key,
-                            show_videos,
-                            show_instructions,
-                            show_tips,
-                            current_week,
-                            day_date=day_date
-                        )
-        
-        # Panel de progreso semanal (se calcula al final para reflejar cambios recientes)
+
+            self._render_training_day_content(
+                muscle_groups,
+                day_key,
+                current_week,
+                day_date,
+                show_videos,
+                show_instructions,
+                show_tips,
+                show_coverage=True,
+            )
+
         self.reload_progress_data()
         week_stats = self.get_week_completion_stats(current_week)
-        with weekly_panel_placeholder.container():
-            st.markdown("### 📈 Progreso de la Semana (Semana Seleccionada)")
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("Ejercicios Completados", week_stats['completed'], f"de {week_stats['total']}")
-            with col2:
-                week_percentage = week_stats['percentage']
-                st.metric("Progreso de la Semana", f"{week_percentage:.1f}%")
-            with col3:
-                week_remaining = week_stats['total'] - week_stats['completed']
-                st.metric("Pendientes", week_remaining, f"{-week_remaining}" if week_remaining > 0 else "0")
-            with col4:
-                if week_percentage >= 80:
-                    st.metric("Estado", "🎉 Excelente", "¡Casi completada!")
-                elif week_percentage >= 50:
-                    st.metric("Estado", "👍 Buen ritmo", "¡Sigue así!")
-                else:
-                    st.metric("Estado", "💪 En marcha", "¡A por ello!")
-            st.progress(week_percentage / 100, text=f"Progreso semanal: {week_percentage:.0f}%")
-            with st.expander("📅 Detalle por días de la semana seleccionada", expanded=False):
-                day_names_full = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
-                for day_stat in week_stats['days']:
-                    try:
-                        date_obj = datetime.datetime.strptime(day_stat['date'], '%Y-%m-%d')
-                        day_label = day_names_full[date_obj.weekday()]
-                    except ValueError:
-                        day_label = 'Día'
+        st.markdown("### 📈 Progreso de esta semana")
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Ejercicios Completados", week_stats['completed'], f"de {week_stats['total']}")
+        with col2:
+            week_percentage = week_stats['percentage']
+            st.metric("Progreso de la Semana", f"{week_percentage:.1f}%")
+        with col3:
+            week_remaining = week_stats['total'] - week_stats['completed']
+            st.metric("Pendientes", week_remaining, f"{-week_remaining}" if week_remaining > 0 else "0")
+        with col4:
+            if week_percentage >= 80:
+                st.metric("Estado", "🎉 Excelente", "¡Casi completada!")
+            elif week_percentage >= 50:
+                st.metric("Estado", "👍 Buen ritmo", "¡Sigue así!")
+            else:
+                st.metric("Estado", "💪 En marcha", "¡A por ello!")
+        st.progress(week_percentage / 100, text=f"Progreso semanal: {week_percentage:.0f}%")
+        with st.expander("📅 Detalle por días", expanded=False):
+            day_names_full = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+            for day_stat in week_stats['days']:
+                try:
+                    date_obj = datetime.datetime.strptime(day_stat['date'], '%Y-%m-%d')
+                    day_label = day_names_full[date_obj.weekday()]
+                except ValueError:
+                    day_label = 'Día'
 
-                    if day_stat['is_rest_day']:
-                        st.markdown(f"**{day_label}**: 🛌 Día de descanso")
-                    else:
-                        completion_text = f"{day_stat['completed']}/{day_stat['total']} ejercicios ({day_stat['percentage']:.1f}%)"
-                        status_emoji = "✅" if day_stat['percentage'] >= 80 else "🔄" if day_stat['percentage'] > 0 else "⏳"
-                        st.markdown(f"**{day_label}**: {status_emoji} {completion_text}")
+                if day_stat['is_rest_day']:
+                    st.markdown(f"**{day_label}**: 🛌 Día de descanso")
+                else:
+                    completion_text = (
+                        f"{day_stat['completed']}/{day_stat['total']} ejercicios "
+                        f"({day_stat['percentage']:.1f}%)"
+                    )
+                    status_emoji = (
+                        "✅" if day_stat['percentage'] >= 80
+                        else "🔄" if day_stat['percentage'] > 0
+                        else "⏳"
+                    )
+                    st.markdown(f"**{day_label}**: {status_emoji} {completion_text}")
 
     def _show_available_exercises_info(self, current_level: int):
         """Mostrar información sobre ejercicios disponibles según el nivel actual"""

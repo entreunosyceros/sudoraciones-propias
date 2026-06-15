@@ -40,7 +40,12 @@ Incluye:
 <img width="1073" height="1829" alt="sudoraciones-biblioteca" src="https://github.com/user-attachments/assets/8a005daa-2f02-41b0-aa8c-cb20c3ffe9dd" />
 
 - **Plan de 20 semanas** en 4 niveles de dificultad, con progresión automática de repeticiones, series, tiempos de plancha y distancia en bici.
+- **Sesión de hoy** como vista principal: entrenamiento del día según el calendario del programa (no el selector manual).
+- **Semana única visible:** la barra lateral muestra la semana de hoy vs. la del selector, con botones para alinearlas.
 - **Rotación inteligente:** como máximo **6 ejercicios por grupo muscular y sesión**; cuando desbloqueas más, la app alterna cuáles salen según semana y día.
+- **Cobertura del catálogo:** cuántos ejercicios de cada grupo has probado al menos una vez y cuáles quedan en rotación.
+- **Calentamiento sugerido:** 2-3 ejercicios de la biblioteca según los grupos del día (opcional, no cuenta en el progreso).
+- **Avisos de nivel** al iniciar semanas 5, 9, 13 y 17 (series, frecuencia y ejercicios nuevos).
 - **Equipamiento configurable** en la barra lateral: el plan solo programa ejercicios que puedes hacer con lo que tienes en casa.
 - **Calendario de progreso** que respeta la fecha de inicio que elijas (sin forzar lunes).
 - **Biblioteca de ejercicios** con filtros por grupo muscular y equipamiento.
@@ -63,7 +68,7 @@ Los gastos calóricos son **estimaciones**. Sin pulsómetro o wearable no se pue
 
 Al registrar una comida en **Tracking Diario**, describe lo que has comido en lenguaje natural. El sistema:
 
-1. **Reconoce ingredientes** contra la base local `data/alimentos_es.json` (~135 alimentos).
+1. **Reconoce ingredientes** contra la base local `data/alimentos_es.json` (~148 alimentos).
 2. **Parsea cantidades** en gramos (`200 g`), unidades (`2 huevos`, `3 claras`), cucharadas (`1 cucharada de azúcar`), latas (`1 lata coca-cola`), litros/ml/cl, o usa la ración típica si no indicas cantidad.
 3. **Separa platos compuestos** con `+`, `,`, `y` o `con` (ej: «pechuga de pollo con arroz»).
 4. **Consulta Open Food Facts** como respaldo si un alimento no está en la base local (requiere conexión).
@@ -92,8 +97,9 @@ Al registrar una comida en **Tracking Diario**, describe lo que has comido en le
 | Salsas y aliños | Mayonesa, alioli, ketchup, tomate frito, salsa barbacoa, salsa de soja, aceite de oliva |
 | Especias | Pimentón dulce, orégano |
 | Lácteos y postres | Yogur natural, quesos gallegos/asturianos, queso batido 0%, filloas, tarta de Santiago, bizcocho, galletas de canela, galletas integrales |
-| Bebidas | Agua, zumo natural/comprado, coca-cola, té helado, tónica, batido de frutas, café, sidra, cerveza, vino |
-| Otros | Fruta, membrillo, frutos secos, batido de proteínas, tofu |
+| Bebidas | Agua, zumo natural/comprado, coca-cola, té helado, tónica, batido de frutas, café, sidra, cerveza, shandy, vino |
+| Fruta | Manzana, plátano, naranja, fresas, kiwi, mandarina, pera, melocotón, sandía, melón, arándanos |
+| Otros | Membrillo, frutos secos, batido de proteínas, tofu |
 
 Para ampliar la base, edita `data/alimentos_es.json` (campos: `nombre`, `aliases`, `por_100g`, `racion_tipica_g`).
 
@@ -303,9 +309,10 @@ Combina suelo y paralelas (abs avanzados integrados en sesiones de abs). En nive
 
 ### Ejercicios auxiliares (Biblioteca)
 
-Disponibles en la pestaña **Biblioteca de Ejercicios** para calentamiento, estiramiento y movilidad. No forman parte del plan semanal principal, pero puedes usarlos libremente:
+Disponibles en la pestaña **Biblioteca de Ejercicios** para calentamiento, estiramiento y movilidad:
 
-- **Calentamiento (8):** rotaciones de hombros, encogimientos escapulares en inversión, círculos de caderas, rotaciones de cuello/brazos, balanceo de piernas, elevaciones de rodillas, jumping jacks suaves.
+- **Calentamiento (8):** rotaciones de hombros, encogimientos escapulares en inversión, círculos de caderas, rotaciones de cuello/brazos, balanceo de piernas, elevaciones de rodillas, jumping jacks suaves.  
+  → El plan sugiere **2-3 por sesión** según los grupos del día (no cuentan en el progreso).
 - **Estiramiento (10):** pectorales, dorsales, hombros, tríceps, isquiotibiales, cuádriceps, gemelos, glúteos, cadera, espalda baja.
 - **Movilidad (8):** gato-camello, bird dog, 90/90 hip switch, rotaciones torácicas, dislocaciones de hombro, círculos de tobillo, sentadilla profunda, world's greatest stretch.
 
@@ -356,6 +363,40 @@ La app aplica estas reglas al montar cada sesión del plan:
 
 **Ejemplo nivel 4 — pecho un viernes vs un sábado:** la combinación de press, flexiones y fondos cambia; no repites los mismos 9 del catálogo en una sola sesión.
 
+## Coherencia y claridad en el plan
+
+La app distingue **tres referencias de semana**:
+
+| Concepto | Qué es |
+|----------|--------|
+| **Semana de hoy** | La que marca tu calendario según la fecha de inicio del programa |
+| **Semana del selector** | La que eliges para explorar o repasar otra semana |
+| **Semana auto-detectada** | Inferida por tu progreso guardado |
+
+### Vista del plan
+
+| Modo | Uso |
+|------|-----|
+| **Hoy** (por defecto) | Sesión del día con la semana del calendario — la forma recomendada de entrenar |
+| **Semana completa** | Todos los días de la semana del selector (repaso o adelanto) |
+
+### Barra lateral
+
+- Muestra la **semana de hoy** y si el selector está alineado.
+- Botones **Semana de hoy** y **Auto-detectada** para sincronizar el selector.
+
+### Avisos de cambio de nivel
+
+En las semanas **5, 9, 13 y 17** aparece un banner con los cambios del nuevo nivel (series, días de entrenamiento, rotación) y los ejercicios recién desbloqueados.
+
+### Cobertura del catálogo (rotación)
+
+En cada sesión, un panel indica por grupo muscular:
+
+- Cuántos ejercicios desbloqueados has hecho **al menos una vez** (ej. Pecho: 4/9).
+- Cuáles tocan **hoy** en la rotación (máx. 6).
+- Cuáles **aún no has probado** o saldrán en otras sesiones.
+
 ## Instalación (.deb)
 
 ```bash
@@ -391,7 +432,7 @@ Acceso web:
 
 ## Pestañas de la aplicación
 
-- 🏋️ Plan de Entrenamiento — sesión del día, marcar ejercicios completados
+- 🏋️ Plan de Entrenamiento — **sesión de hoy**, calentamiento sugerido, cobertura de rotación, marcar ejercicios
 - 📊 Progreso — calendario mensual y vista semanal
 - 📈 Estadísticas — métricas de entrenamiento e indicadores de coherencia
 - 📚 Biblioteca de Ejercicios — catálogo con filtros y videos

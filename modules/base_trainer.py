@@ -53,7 +53,65 @@ class BaseTrainer:
 
     ESTIMATED_TRAINING_KCAL_PER_SESSION = 320
     MAX_EXERCISES_PER_MUSCLE_GROUP = 6
+    MAX_SUGGESTED_WARMUPS = 3
     DAY_KEYS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
+
+    WARMUP_BY_MUSCLE_GROUP = {
+        'pecho': ['Rotaciones de Hombros', 'Rotaciones de Brazos'],
+        'espalda': ['Encogimientos Escapulares en Inversión', 'Rotaciones de Hombros', 'Rotaciones de Brazos'],
+        'hombros': ['Rotaciones de Hombros', 'Rotaciones de Brazos'],
+        'brazos': ['Rotaciones de Brazos', 'Rotaciones de Hombros'],
+        'piernas': ['Círculos de Caderas', 'Balanceo de Piernas', 'Elevaciones de Rodillas'],
+        'gemelos': ['Balanceo de Piernas', 'Círculos de Caderas'],
+        'abs': ['Círculos de Caderas', 'Elevaciones de Rodillas'],
+        'cardio': ['Jumping Jacks Suaves', 'Elevaciones de Rodillas'],
+    }
+    GENERAL_WARMUP_FILLERS = [
+        'Rotaciones de Cuello',
+        'Jumping Jacks Suaves',
+        'Elevaciones de Rodillas',
+    ]
+
+    MUSCLE_GROUP_LABELS_ES = {
+        'pecho': 'Pecho',
+        'espalda': 'Espalda',
+        'hombros': 'Hombros',
+        'brazos': 'Brazos',
+        'piernas': 'Piernas',
+        'gemelos': 'Gemelos',
+        'abs': 'Abdominales',
+        'cardio': 'Cardio',
+    }
+
+    LEVEL_TRANSITION_INFO = {
+        2: {
+            'title': 'Nivel 2 — Intermedio (semanas 5-8)',
+            'changes': [
+                '**4 series** por ejercicio de fuerza',
+                '**+1 día** de entrenamiento por semana (martes activo)',
+                'Nuevos ejercicios desbloqueados en el catálogo',
+                'Hasta **6 ejercicios por grupo** con rotación automática',
+            ],
+        },
+        3: {
+            'title': 'Nivel 3 — Avanzado (semanas 9-12)',
+            'changes': [
+                '**5 series** por ejercicio',
+                'Más frecuencia de **abdominales** y cardio en el calendario',
+                'Reps de fuerza se mantienen estables (sin más subidas)',
+                'Rotación ampliada con más ejercicios en el pool',
+            ],
+        },
+        4: {
+            'title': 'Nivel 4 — Experto (semanas 13-20)',
+            'changes': [
+                '**6 series** por ejercicio — volumen máximo',
+                'Plan avanzado: **6 días** de entrenamiento por semana',
+                'Rotación entre todo el catálogo desbloqueado',
+                'Prioriza la técnica y la recuperación entre sesiones',
+            ],
+        },
+    }
     
     def __init__(self):
         """Inicializar la aplicación"""
@@ -472,6 +530,171 @@ class BaseTrainer:
 
         start = self._get_rotation_index(muscle_group, day_key, week_number, len(sorted_exercises))
         return [sorted_exercises[(start + index) % len(sorted_exercises)] for index in range(max_count)]
+
+    def get_suggested_warmup_exercises(
+        self,
+        muscle_groups: list[str],
+        day_key: str,
+        week_number: int,
+        max_count: int | None = None,
+    ) -> list[dict]:
+        """Elegir 2-3 ejercicios de calentamiento de la biblioteca según los grupos del día."""
+        if max_count is None:
+            max_count = self.MAX_SUGGESTED_WARMUPS
+
+        warmup_catalog = {
+            exercise['name']: exercise
+            for exercise in self.config.get('exercises', {}).get('calentamiento', [])
+        }
+        if not warmup_catalog or not muscle_groups:
+            return []
+
+        scores: dict[str, int] = {}
+        order: list[str] = []
+        for muscle_group in muscle_groups:
+            for name in self.WARMUP_BY_MUSCLE_GROUP.get(muscle_group, []):
+                scores[name] = scores.get(name, 0) + 1
+                if name not in order:
+                    order.append(name)
+
+        for name in self.GENERAL_WARMUP_FILLERS:
+            if name not in order:
+                order.append(name)
+
+        ranked_names = sorted(
+            [name for name in order if name in warmup_catalog],
+            key=lambda name: (-scores.get(name, 0), order.index(name)),
+        )
+        available_names = [
+            name for name in ranked_names
+            if self.is_exercise_available(warmup_catalog[name])
+        ]
+        if not available_names:
+            return []
+
+        target_count = min(max(max_count, 2), self.MAX_SUGGESTED_WARMUPS, len(available_names))
+        if len(available_names) > target_count:
+            start = self._get_rotation_index('calentamiento', day_key, week_number, len(available_names))
+            selected_names = [
+                available_names[(start + index) % len(available_names)]
+                for index in range(target_count)
+            ]
+        else:
+            selected_names = available_names[:target_count]
+
+        return [warmup_catalog[name] for name in selected_names]
+
+    def get_week_context(self) -> Dict[str, Any]:
+        """Contexto unificado de semanas: calendario, selector y auto-detección."""
+        today_str = datetime.datetime.now().strftime('%Y-%m-%d')
+        today_date = datetime.datetime.now().date()
+        today_week = self.get_program_week_for_date(today_str)
+        selector_week = int(st.session_state.get('current_week', 1))
+        auto_week = self.get_auto_detected_week()
+        today_day_key = self.DAY_KEYS[today_date.weekday()]
+
+        return {
+            'today': today_str,
+            'today_formatted': today_date.strftime('%d-%m-%Y'),
+            'today_week': today_week,
+            'today_day_key': today_day_key,
+            'selector_week': selector_week,
+            'auto_week': auto_week,
+            'is_selector_aligned': selector_week == today_week,
+            'week_info_today': self.get_week_info(today_week),
+            'week_info_selector': self.get_week_info(selector_week),
+        }
+
+    def get_unlocked_exercise_pool(self, muscle_group: str, week_number: int) -> list[dict]:
+        """Catálogo desbloqueado de un grupo (nivel + equipamiento), sin aplicar rotación."""
+        all_exercises = list(self.config.get('exercises', {}).get(muscle_group, []))
+        if muscle_group == 'abs':
+            all_exercises.extend(self.config.get('exercises', {}).get('abs_avanzados', []))
+
+        current_level = (week_number - 1) // 4 + 1
+        available = self._filter_exercises_by_level(all_exercises, current_level)
+        available = self.filter_exercises_by_equipment(available)
+
+        seen: set[str] = set()
+        pool: list[dict] = []
+        for exercise in available:
+            name = exercise.get('name', '')
+            if name and name not in seen:
+                seen.add(name)
+                pool.append(exercise)
+        return sorted(pool, key=lambda ex: (ex.get('difficulty_level', 1), ex.get('name', '')))
+
+    def get_rotation_coverage_for_group(
+        self, muscle_group: str, day_key: str, week_number: int
+    ) -> Dict[str, Any]:
+        """Cobertura del catálogo rotativo: pool, completados al menos una vez y sesión de hoy."""
+        pool = self.get_unlocked_exercise_pool(muscle_group, week_number)
+        today_exercises = self.get_planned_exercises_for_group(muscle_group, day_key, week_number)
+        today_names = [ex['name'] for ex in today_exercises]
+
+        completed_once: list[str] = []
+        never_done: list[str] = []
+        for exercise in pool:
+            name = exercise['name']
+            if self.get_exercise_completion_count(muscle_group, name) > 0:
+                completed_once.append(name)
+            else:
+                never_done.append(name)
+
+        rotating_other = [name for name in (ex['name'] for ex in pool) if name not in today_names]
+        pool_total = len(pool)
+        completed_count = len(completed_once)
+
+        return {
+            'muscle_group': muscle_group,
+            'label': self.MUSCLE_GROUP_LABELS_ES.get(muscle_group, muscle_group.title()),
+            'pool_total': pool_total,
+            'completed_once': completed_count,
+            'coverage_pct': (completed_count / pool_total * 100) if pool_total else 100,
+            'today_names': today_names,
+            'never_done': never_done,
+            'rotating_other': rotating_other,
+        }
+
+    def should_show_level_transition_banner(self, week_number: int) -> bool:
+        """Mostrar aviso al iniciar cada nuevo nivel (semanas 5, 9, 13, 17)."""
+        return week_number in (5, 9, 13, 17)
+
+    def render_week_coherence_panel(self):
+        """Panel lateral: semana del calendario vs semana del selector."""
+        ctx = self.get_week_context()
+        today_info = ctx['week_info_today']
+        selector_info = ctx['week_info_selector']
+
+        st.markdown("### 📅 Semana del programa")
+        st.markdown(
+            f"**Hoy ({ctx['today_formatted']}):** Semana **{ctx['today_week']}** · "
+            f"{today_info['level_name']}"
+        )
+
+        if ctx['is_selector_aligned']:
+            st.success(f"Selector alineado: Semana {ctx['selector_week']}")
+        else:
+            st.warning(
+                f"Selector en Semana **{ctx['selector_week']}** ({selector_info['level_name']}), "
+                f"pero el calendario marca Semana **{ctx['today_week']}**. "
+                f"Marca ejercicios con la semana del día que entrenas."
+            )
+
+        col_a, col_b = st.columns(2)
+        with col_a:
+            if st.button("📆 Semana de hoy", use_container_width=True, key="sync_calendar_week"):
+                st.session_state.current_week = ctx['today_week']
+                st.rerun()
+        with col_b:
+            if st.button("🎯 Auto-detectada", use_container_width=True, key="sync_auto_week"):
+                st.session_state.current_week = ctx['auto_week']
+                st.rerun()
+
+        st.caption(
+            f"Auto-detectada: Semana {ctx['auto_week']} · "
+            f"Ciclo {today_info['week_in_cycle']}/4"
+        )
     
     def _filter_exercises_by_level(self, exercises: list[dict], current_level: int) -> list[dict]:
         """Filtrar ejercicios según el nivel de dificultad actual - incluye ejercicios del nivel actual y anteriores"""
@@ -1453,35 +1676,45 @@ class BaseTrainer:
             return False
 
     def render_week_selector(self):
-        """Renderizar selector de semana simplificado"""
-        st.markdown("### 📅 Selector de Semana")
-        
-        # Crear columns para el selector y el botón
-        col1, col2 = st.columns([3, 1])
-        
-        with col1:
-            # Selector de semana
-            current_week = st.session_state.get('current_week', 1)
-            max_weeks = self.config.get('total_weeks', 20)
-            
-            selected_week = st.selectbox(
-                "Selecciona la semana:",
-                range(1, max_weeks + 1),
-                index=current_week - 1,
-                format_func=lambda x: f"Semana {x}" + (" (Actual)" if x == current_week else ""),
-                key="week_selector"
+        """Selector de semana con aviso de alineación al calendario."""
+        ctx = self.get_week_context()
+        st.markdown("### 📅 Explorar otra semana")
+        st.caption(
+            f"Tu entrenamiento de **hoy** corresponde a la **Semana {ctx['today_week']}** del programa. "
+            "Usa el selector solo para repasar o adelantar."
+        )
+
+        if not ctx['is_selector_aligned']:
+            st.warning(
+                f"Viendo Semana **{ctx['selector_week']}** · Hoy es Semana **{ctx['today_week']}** en el calendario."
             )
-            
-            # Actualizar la semana actual si cambió
+
+        col1, col2, col3 = st.columns([3, 1, 1])
+        with col1:
+            max_weeks = self.config.get('total_weeks', 20)
+            selected_week = st.selectbox(
+                "Semana a visualizar:",
+                range(1, max_weeks + 1),
+                index=ctx['selector_week'] - 1,
+                format_func=lambda x: (
+                    f"Semana {x}"
+                    + (" · hoy" if x == ctx['today_week'] else "")
+                    + (" · viendo" if x == ctx['selector_week'] else "")
+                ),
+                key="week_selector",
+            )
             if selected_week != st.session_state.current_week:
                 st.session_state.current_week = selected_week
                 st.rerun()
-        
+
         with col2:
-            # Botón para ir a la semana actual
-            if st.button("🎯 Ir a Semana Actual", help="Ir a la semana detectada automáticamente"):
-                auto_week = self.get_auto_detected_week()
-                st.session_state.current_week = auto_week
+            if st.button("📆 Hoy", help="Ir a la semana del calendario de hoy", use_container_width=True):
+                st.session_state.current_week = ctx['today_week']
                 st.rerun()
-        
+
+        with col3:
+            if st.button("🎯 Auto", help="Semana según tu progreso", use_container_width=True):
+                st.session_state.current_week = ctx['auto_week']
+                st.rerun()
+
         st.markdown("---")

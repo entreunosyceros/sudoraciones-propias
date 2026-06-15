@@ -269,18 +269,9 @@ class ModernHeavyDutyTrainer:
         """Renderizar barra lateral con opciones completas incluyendo mapeo calendario"""
         with st.sidebar:
             st.markdown("## ⚙️ Configuración")
-            
-            # Mostrar información de la semana actual sin selector redundante
-            current_week = st.session_state.get('current_week', 1)
-            week_info = self.base_trainer.get_week_info(current_week)
-            
-            st.info(f"""
-            **Semana actual del programa:** {current_week}/20
-            **Nivel:** {week_info['level_name']}
-            **Descripción:** {week_info['level_description']}
-            **Semana en ciclo:** {week_info['week_in_cycle']}/4
-            """)
-            
+
+            self.base_trainer.render_week_coherence_panel()
+
             st.markdown("---")
             
             self.base_trainer.render_equipment_settings()
@@ -297,12 +288,12 @@ class ModernHeavyDutyTrainer:
             
             # Información del programa
             total_exercises = self.base_trainer.get_total_exercises_count()
+            ctx = self.base_trainer.get_week_context()
             st.markdown("### ℹ️ Información")
             st.info(f"""
-            **Semana actual:** {current_week}/20
-            **Total ejercicios:** {total_exercises} (distribuidos en 8 grupos musculares)
-            **Días por semana:** 3-4
-            **Días de descanso:** 3-4
+            **Semana de hoy:** {ctx['today_week']}/20
+            **Total ejercicios:** {total_exercises}
+            **Nivel hoy:** {ctx['week_info_today']['level_name']}
             """)
             
             # Configuración de fecha de inicio del programa
