@@ -2,7 +2,7 @@
 
 <img width="1066" height="1832" alt="sudoraciones-portada" src="https://github.com/user-attachments/assets/c59911ed-bbee-4a42-bbb3-f6e6433536ec" />
 
-Sistema personal de entrenamiento en Python + Streamlit con progresión automática, calendario de progreso y módulo de nutrición... Esto está hecho por un motivo en particular ... pero si a alguien le sirve ... 
+Sistema personal de entrenamiento en **Python 3.12+** y Streamlit con progresión automática, calendario de progreso y módulo de nutrición... Esto está hecho por un motivo en particular ... pero si a alguien le sirve ... 
 
 ## Perfil objetivo
 
@@ -44,7 +44,7 @@ Incluye:
 - **Semana única visible:** la barra lateral muestra la semana de hoy vs. la del selector, con botones para alinearlas.
 - **Rotación inteligente:** como máximo **6 ejercicios por grupo muscular y sesión**; cuando desbloqueas más, la app alterna cuáles salen según semana y día.
 - **Cobertura del catálogo:** cuántos ejercicios de cada grupo has probado al menos una vez y cuáles quedan en rotación.
-- **Calentamiento sugerido:** 2-3 ejercicios de la biblioteca según los grupos del día (opcional, no cuenta en el progreso ... aun que siempre es recomendable calentar para evitar lesiones).
+- **Calentamiento sugerido:** 2-3 ejercicios de la biblioteca según los grupos del día (opcional, no cuenta en el progreso; aunque siempre es recomendable calentar para evitar lesiones).
 - **Avisos de nivel** al iniciar semanas 5, 9, 13 y 17 (series, frecuencia y ejercicios nuevos).
 - **Equipamiento configurable** en la barra lateral: el plan solo programa ejercicios que puedes hacer con lo que tienes en casa.
 - **Calendario de progreso** que respeta la fecha de inicio que elijas (sin forzar lunes).
@@ -68,7 +68,7 @@ Incluye:
 
 Al registrar una comida en **Tracking Diario**, describe lo que has comido en lenguaje natural. El sistema:
 
-1. **Reconoce ingredientes** contra la base local `data/alimentos_es.json` (~148 alimentos).
+1. **Reconoce ingredientes** contra la base local `data/alimentos_es.json` (**148 alimentos**, incl. frutas de temporada: naranja, fresas, kiwi, mandarina, pera, melocotón, sandía, melón, arándanos…).
 2. **Parsea cantidades** en gramos (`200 g`), unidades (`2 huevos`, `3 claras`), cucharadas (`1 cucharada de azúcar`), latas (`1 lata coca-cola`), litros/ml/cl, o usa la ración típica si no indicas cantidad.
 3. **Separa platos compuestos** con `+`, `,`, `y` o `con` (ej: «pechuga de pollo con arroz»).
 4. **Consulta Open Food Facts** como respaldo si un alimento no está en la base local (requiere conexión).
@@ -78,7 +78,7 @@ Al registrar una comida en **Tracking Diario**, describe lo que has comido en le
 
 - `200 g pechuga de pollo con 180 g arroz blanco cocido`
 - `ensaladilla rusa, 2 huevos y pan integral`
-- `hamburguesa de pollo, cocacola y ensalada mixta`
+- `hamburguesa de pollo, coca-cola y ensalada mixta`
 - `rapante a la plancha con guisantes y patata`
 - `yogur natural, galletas integrales y café solo`
 - `bizcocho de limón y tónica`

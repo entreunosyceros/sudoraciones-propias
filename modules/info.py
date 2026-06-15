@@ -99,14 +99,15 @@ class InfoModule(BaseTrainer):
         - Platos compuestos separados con `+`, `,`, `y` o `con`
         - Desglose editable antes de guardar; comidas estimadas quedan marcadas
 
-        **Ejemplos:** «200 g pechuga de pollo con arroz», «ensaladilla y pan», «hamburguesa de cerdo con cocacola»
+        **Ejemplos:** «200 g pechuga de pollo con arroz», «ensaladilla y pan», «hamburguesa de cerdo con coca-cola»
 
         #### Categorías en la base local
 
         Proteínas (pollo, pescado, marisco, cerdo, hamburguesas, albóndigas, chuletas…),
         carbohidratos (arroz, pasta, pan, patata…), legumbres (lentejas, garbanzos, fabada, habas…),
         verduras y ensaladas (incl. ensaladilla rusa), platos preparados gallegos y del norte,
-        salsas, lácteos, postres, bebidas (agua, zumos, refrescos, té helado, batidos…) y más.
+        salsas, lácteos, postres, frutas de temporada (naranja, fresas, kiwi, mandarina, pera, melocotón, sandía, melón, arándanos…),
+        bebidas (agua, zumos, refrescos, té helado, batidos, café, cerveza, vino…) y más.
         """)
 
         st.caption(

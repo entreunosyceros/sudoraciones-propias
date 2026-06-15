@@ -1,0 +1,55 @@
+name: Solicitud de mejora
+description: Proponer una nueva función o mejora
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe el problema o la necesidad antes que la solución concreta. Así es más fácil valorar la propuesta.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área
+      options:
+        - Entrenamiento / plan semanal
+        - Nutrición / estimador de alimentos
+        - Estadísticas e indicadores
+        - Biblioteca o vídeos
+        - Documentación
+        - Empaquetado / instalación
+        - Otro
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: ¿Qué problema o necesidad quieres resolver?
+      placeholder: "Ej.: No puedo ver de un vistazo qué ejercicios de pecho me faltan por probar."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solución propuesta (opcional)
+      description: Cómo imaginas que debería funcionar
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Alcance
+      options:
+        - label: Estoy dispuesto/a a contribuir con un PR si la propuesta encaja
+          required: false

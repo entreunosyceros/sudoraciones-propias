@@ -1,0 +1,91 @@
+name: Informe de error
+description: Algo no funciona como debería
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por reportar un error. Cuanta más información des, más fácil será reproducirlo.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área afectada
+      options:
+        - Plan de entrenamiento / sesión de hoy
+        - Calendario y progreso
+        - Estadísticas
+        - Biblioteca de ejercicios
+        - Nutrición / estimador de alimentos
+        - Instalación (.deb) o launcher
+        - Otro
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Versión
+      description: Versión de la app o commit si ejecutas desde código fuente
+      placeholder: "1.4.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducir
+      description: Lista numerada de acciones hasta ver el fallo
+      placeholder: |
+        1. Abrir pestaña Nutrición
+        2. Pulsar «Estimar macros automáticamente»
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamiento esperado
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamiento actual
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs o capturas
+      description: Salida de `sudoraciones log`, traceback de Streamlit o capturas (sin datos personales)
+      render: shell
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Entorno
+      options:
+        - Paquete .deb (sudoraciones)
+        - Código fuente (python3 run_app.py)
+        - No lo sé
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Versión de Python (si aplica)
+      placeholder: "3.12.x"
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Confirmación
+      options:
+        - label: He buscado en issues abiertas y cerradas y no he encontrado un duplicado
+          required: true
