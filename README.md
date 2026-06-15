@@ -2,7 +2,7 @@
 
 <img width="1066" height="1832" alt="sudoraciones-portada" src="https://github.com/user-attachments/assets/c59911ed-bbee-4a42-bbb3-f6e6433536ec" />
 
-Sistema personal de entrenamiento en Python + Streamlit con progresión automática, calendario de progreso y módulo de nutrición.
+Sistema personal de entrenamiento en Python + Streamlit con progresión automática, calendario de progreso y módulo de nutrición... Esto está hecho por un motivo en particular ... pero si a alguien le sirve ... 
 
 ## Perfil objetivo
 
@@ -19,7 +19,7 @@ En la **barra lateral** puedes indicar qué material tienes. El plan se adapta a
 
 ## Descripción
 
-Aplicación modular para planificar y seguir entrenamientos durante 20 semanas. Todo gira en torno a una pregunta:
+Aplicación modular para planificar y seguir entrenamientos durante 20 semanas (5 meses). Todo gira en torno a una pregunta:
 
 > *¿Estoy entrenando y alimentándome de forma coherente con mi objetivo?*
 
@@ -44,7 +44,7 @@ Incluye:
 - **Semana única visible:** la barra lateral muestra la semana de hoy vs. la del selector, con botones para alinearlas.
 - **Rotación inteligente:** como máximo **6 ejercicios por grupo muscular y sesión**; cuando desbloqueas más, la app alterna cuáles salen según semana y día.
 - **Cobertura del catálogo:** cuántos ejercicios de cada grupo has probado al menos una vez y cuáles quedan en rotación.
-- **Calentamiento sugerido:** 2-3 ejercicios de la biblioteca según los grupos del día (opcional, no cuenta en el progreso).
+- **Calentamiento sugerido:** 2-3 ejercicios de la biblioteca según los grupos del día (opcional, no cuenta en el progreso ... aun que siempre es recomendable calentar para evitar lesiones).
 - **Avisos de nivel** al iniciar semanas 5, 9, 13 y 17 (series, frecuencia y ejercicios nuevos).
 - **Equipamiento configurable** en la barra lateral: el plan solo programa ejercicios que puedes hacer con lo que tienes en casa.
 - **Calendario de progreso** que respeta la fecha de inicio que elijas (sin forzar lunes).
@@ -53,14 +53,14 @@ Incluye:
 
 ### Nutrición
 
+>El cálculo de calorías y gasto energético son datos son estimados. Los gastos calóricos son **estimaciones**. Sin pulsómetro o wearable no se puede conocer el gasto real con precisión.
+
 - **Calculadora de calorías y macros** (Mifflin-St Jeor) con objetivos según mantener, volumen o definición.
 - **Gasto energético estimado** desglosado: metabolismo basal, actividad diaria y entrenamiento (~320 kcal/sesión).
 - **Tracking diario** de comidas con progreso respecto a tus objetivos.
 - **Estimación automática de macros** al describir lo que comes en texto libre (botón «Estimar macros automáticamente»).
 - **Registro de peso** diario vinculado al perfil nutricional.
 - **Indicadores semanales** que cruzan entrenamientos completados, calorías ingeridas, balance estimado y tendencia de peso.
-
-Los gastos calóricos son **estimaciones**. Sin pulsómetro o wearable no se puede conocer el gasto real con precisión.
 
 ### Estimador de alimentos
 
@@ -105,7 +105,7 @@ Para ampliar la base, edita `data/alimentos_es.json` (campos: `nombre`, `aliases
 
 ## Complemento en paralelas (calistenia)
 
-El entrenamiento principal sigue centrado en **mancuernas, banco y suelo**. Las paralelas son opcionales y actúan como añadido dentro del **tope de 6 ejercicios por grupo y sesión**:
+El entrenamiento principal se centra en **mancuernas, banco y suelo**. Las paralelas son opcionales y actúan como añadido dentro del **tope de 6 ejercicios por grupo y sesión**:
 
 | Patrón | Ejercicios | Niveles |
 |--------|-----------|---------|
@@ -113,7 +113,7 @@ El entrenamiento principal sigue centrado en **mancuernas, banco y suelo**. Las 
 | **Tirón** | Remo invertido clásico (neutro), supino, pies elevados, tuck australiano, encogimientos escapulares | 1–4 |
 | **Core** | Elevaciones de rodillas, piernas estiradas, L-sit hold, L-sit a knee raise dinámico | 1–4 |
 
-Si tienes paralelas y hay calistenia desbloqueada para ese grupo, **1 de los 6 huecos de la sesión** se reserva para un ejercicio 🪜 rotativo (pecho, espalda, hombros, brazos, abs). El resto son ejercicios principales con peso o suelo.
+Si tienes paralelas (o dos sillas que puedan soportar tu peso) y hay calistenia desbloqueada para ese grupo, **1 de los 6 huecos de la sesión** se reserva para un ejercicio 🪜 rotativo (pecho, espalda, hombros, brazos, abs). El resto son ejercicios principales con peso o suelo.
 
 ## Equipamiento configurable
 
@@ -158,7 +158,7 @@ La pestaña **📈 Estadísticas** también muestra un resumen de coherencia sem
 
 El plan dura **20 semanas** repartidas en **4 niveles**. Cada nivel desbloquea ejercicios nuevos; los anteriores siguen en el catálogo pero **no salen todos a la vez** en cada sesión.
 
-**Regla de sesión:** como máximo **6 ejercicios por grupo muscular**. Si hay más desbloqueados, la app **rota** la selección según semana y día para que vayas cubriendo todo el repertorio sin sesiones eternas. Si hay paralelas, **1 de esos 6** puede ser calistenia (🪜).
+**Regla de sesión:** como máximo **6 ejercicios por grupo muscular** ya que si cuidas la técnica, eso ya es un buen rato de ejercicio. Si hay más desbloqueados, la app **rota** la selección según semana y día para que vayas cubriendo todo el repertorio sin sesiones eternas.
 
 | Nivel | Ejemplo pecho (aprox.) | Ejemplo brazos (aprox.) |
 |-------|------------------------|-------------------------|
@@ -167,7 +167,7 @@ El plan dura **20 semanas** repartidas en **4 niveles**. Cada nivel desbloquea e
 | 3 | 6 (tope: 5 principales + 1 🪜) | 6 (rota entre curl 21s, antebrazos, etc.) |
 | 4+ | 6 (rota entre press, flexiones, fondos…) | 6 (rota bíceps/tríceps/antebrazo/calistenia) |
 
-Las tablas del catálogo listan **todo lo desbloqueable** por nivel, no necesariamente lo que verás el mismo día. Los ejercicios 🪜 son el complemento en paralelas.
+Las tablas del catálogo listan **todo lo desbloqueable** por nivel, no necesariamente lo que verás el mismo día. 
 
 Las tablas siguientes muestran **repeticiones de referencia en la semana 1** del programa (rangos de fuerza típicos: **9-10**). A partir de ahí la app ajusta automáticamente series/reps/tiempos según la semana y el nivel (ver [Progresión de entrenamiento](#progresión-de-entrenamiento)).
 
@@ -491,4 +491,4 @@ pip install -r requirements.txt
 
 <img width="1079" height="1834" alt="sudoraciones-info" src="https://github.com/user-attachments/assets/f1f61266-dcaf-4ac7-9b84-cd4f6a9298f4" />
 
-Desarrollado con Python y Streamlit por entreunosyceros.
+Desarrollado con Python, Streamlit, ☕ y 🚬 por entreunosyceros.
