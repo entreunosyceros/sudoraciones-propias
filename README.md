@@ -156,6 +156,8 @@ La pestaña **📈 Estadísticas** también muestra un resumen de coherencia sem
 
 ## Catálogo completo de ejercicios del programa
 
+<!-- Prueba de flujo de trabajo -->
+
 El plan dura **20 semanas** repartidas en **4 niveles**. Cada nivel desbloquea ejercicios nuevos; los anteriores siguen en el catálogo pero **no salen todos a la vez** en cada sesión.
 
 **Regla de sesión:** como máximo **6 ejercicios por grupo muscular** ya que si cuidas la técnica, eso ya es un buen rato de ejercicio. Si hay más desbloqueados, la app **rota** la selección según semana y día para que vayas cubriendo todo el repertorio sin sesiones eternas.
