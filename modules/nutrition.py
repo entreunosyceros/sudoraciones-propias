@@ -9,7 +9,7 @@ import datetime
 from typing import Dict, Any, List
 from .base_trainer import BaseTrainer
 from .estimador_alimentos import EstimadorAlimentos
-from .paths import NUTRITION_FILE
+from .paths import NUTRITION_FILE, ensure_data_dir
 
 
 class NutritionModule(BaseTrainer):
@@ -53,6 +53,7 @@ class NutritionModule(BaseTrainer):
     def save_nutrition_data(self):
         """Guardar datos de nutrición"""
         try:
+            ensure_data_dir()
             with open(self.nutrition_file, 'w', encoding='utf-8') as f:
                 json.dump(self.nutrition_data, f, indent=2, ensure_ascii=False)
         except Exception as e:

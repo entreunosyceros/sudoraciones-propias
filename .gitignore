@@ -5,6 +5,10 @@ packaging/
 test_*.py
 check_*.py
 migrate_*.py
+progress_data.json
+progress_data_backup.json
 progress_data_backup_*.json
+nutrition_data.json
+user_settings.json
 *.log
 *.deb

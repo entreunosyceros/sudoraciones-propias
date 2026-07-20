@@ -17,6 +17,8 @@ from .paths import (
     PROGRESS_FILE,
     USER_SETTINGS_FILE,
     app_path,
+    data_path,
+    ensure_data_dir,
 )
 
 
@@ -165,11 +167,14 @@ class BaseTrainer:
 
     def get_auto_detected_week(self) -> int:
         """Auto-detectar la semana de entrenamiento actual basada en el progreso del usuario."""
-        if not self.has_training_progress():
-            return 1
-
         today = datetime.datetime.now().strftime('%Y-%m-%d')
         program_week = min(max(self.get_calendar_week_for_date(today), 1), 20)
+
+        if not self.has_training_progress():
+            # Sin ejercicios marcados: respetar la semana del calendario
+            # (permite retomar el programa en la semana N tras perder progreso).
+            return program_week
+
         max_week_with_progress = self._get_max_week_with_progress()
 
         if max_week_with_progress > 0:
@@ -179,6 +184,19 @@ class BaseTrainer:
             return max_week_with_progress
 
         return program_week
+
+    def set_current_program_week(self, week_number: int) -> bool:
+        """Hacer que 'hoy' sea el inicio de la semana indicada (recalcula fecha de inicio)."""
+        max_weeks = int(self.config.get('total_weeks', 20))
+        week_number = min(max(int(week_number), 1), max_weeks)
+        today = datetime.date.today()
+        # Hoy cae en el día 0 de esa semana del programa
+        start_date = today - datetime.timedelta(weeks=week_number - 1)
+        self.progress_data['program_start_date'] = start_date.strftime('%Y-%m-%d')
+        self.update_calendar_mapping()
+        self.save_progress_data()
+        st.session_state.current_week = week_number
+        return True
 
     def get_week_completion_stats_for_week(self, week_number: int) -> Dict[str, Any]:
         """Porcentaje de días de entrenamiento completados (≥80%) en una semana del programa."""
@@ -675,6 +693,7 @@ class BaseTrainer:
         ctx = self.get_week_context()
         today_info = ctx['week_info_today']
         selector_info = ctx['week_info_selector']
+        max_weeks = int(self.config.get('total_weeks', 20))
 
         st.markdown("### 📅 Semana del programa")
         st.markdown(
@@ -683,13 +702,33 @@ class BaseTrainer:
         )
 
         if ctx['is_selector_aligned']:
-            st.success(f"Selector alineado: Semana {ctx['selector_week']}")
+            st.success(f"Entrenando en Semana {ctx['selector_week']}")
         else:
-            st.warning(
-                f"Selector en Semana **{ctx['selector_week']}** ({selector_info['level_name']}), "
-                f"pero el calendario marca Semana **{ctx['today_week']}**. "
-                f"Marca ejercicios con la semana del día que entrenas."
+            st.info(
+                f"Viendo Semana **{ctx['selector_week']}** ({selector_info['level_name']}). "
+                f"Hoy en el calendario es Semana **{ctx['today_week']}**."
             )
+            if st.button(
+                f"✅ Continuar desde Semana {ctx['selector_week']}",
+                use_container_width=True,
+                key="adopt_selector_week",
+                help="Ajusta la fecha de inicio para que hoy sea esa semana del programa",
+            ):
+                self.set_current_program_week(ctx['selector_week'])
+                st.rerun()
+
+        jump_week = st.number_input(
+            "Retomar en la semana:",
+            min_value=1,
+            max_value=max_weeks,
+            value=min(max(ctx['today_week'], 1), max_weeks),
+            step=1,
+            key="jump_program_week",
+            help="Si perdiste el progreso o quieres adelantar/retrasar el programa",
+        )
+        if st.button("🚀 Empezar desde esa semana", use_container_width=True, key="jump_program_week_btn"):
+            self.set_current_program_week(int(jump_week))
+            st.rerun()
 
         col_a, col_b = st.columns(2)
         with col_a:
@@ -748,6 +787,7 @@ class BaseTrainer:
         """Guardar preferencias del usuario"""
         self.user_settings['last_updated'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         try:
+            ensure_data_dir()
             with open(self.USER_SETTINGS_FILE, 'w', encoding='utf-8') as f:
                 json.dump(self.user_settings, f, indent=2, ensure_ascii=False)
         except OSError as e:
@@ -990,7 +1030,9 @@ class BaseTrainer:
             except Exception as e:
                 st.warning(f"Error cargando progress_data.json: {e}")
                 # Crear archivo de backup
-                backup_name = app_path(f"progress_data_backup_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+                backup_name = data_path(
+                    f"progress_data_backup_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                )
                 try:
                     import shutil
                     shutil.copy(PROGRESS_FILE, backup_name)
@@ -1138,13 +1180,6 @@ class BaseTrainer:
         """Semana efectiva para planificar y marcar ejercicios."""
         if self.is_before_program_start(date_str):
             return 1
-        if not self.has_training_progress():
-            return 1
-
-        today = datetime.datetime.now().strftime('%Y-%m-%d')
-        if date_str == today:
-            return self.get_auto_detected_week()
-
         return min(max(self.get_calendar_week_for_date(date_str), 1), 20)
 
     def get_pending_day_stats(self, week_number: int | None = None, is_future: bool = False) -> Dict[str, Any]:
@@ -1286,7 +1321,7 @@ class BaseTrainer:
 
     def save_progress_data_internal(self, data: Dict[str, Any]):
         """Método interno para guardar datos específicos (usado en migración)"""
-        os.makedirs(os.path.dirname(PROGRESS_FILE), exist_ok=True)
+        ensure_data_dir()
         with open(PROGRESS_FILE, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
@@ -1346,6 +1381,7 @@ class BaseTrainer:
         self.progress_data['last_saved'] = datetime.datetime.now().isoformat()
         
         try:
+            ensure_data_dir()
             # Crear backup antes de guardar
             if os.path.exists(PROGRESS_FILE):
                 shutil.copy(PROGRESS_FILE, PROGRESS_BACKUP_FILE)
@@ -1368,9 +1404,13 @@ class BaseTrainer:
                     
         except Exception as e:
             st.error(f"❌ Error guardando progress_data.json: {e}")
-            # Restaurar backup si existe
-            if os.path.exists(PROGRESS_BACKUP_FILE):
-                shutil.copy(PROGRESS_BACKUP_FILE, PROGRESS_FILE)
+            # Restaurar backup si existe y es posible escribir
+            try:
+                if os.path.exists(PROGRESS_BACKUP_FILE):
+                    ensure_data_dir()
+                    shutil.copy(PROGRESS_BACKUP_FILE, PROGRESS_FILE)
+            except OSError:
+                pass
 
     def reload_progress_data(self):
         """Recargar datos de progreso desde archivo"""
@@ -1754,13 +1794,20 @@ class BaseTrainer:
         st.markdown("### 📅 Explorar otra semana")
         st.caption(
             f"Tu entrenamiento de **hoy** corresponde a la **Semana {ctx['today_week']}** del programa. "
-            "Usa el selector solo para repasar o adelantar."
+            "Usa el selector para repasar o para retomar en otra semana."
         )
 
         if not ctx['is_selector_aligned']:
-            st.warning(
+            st.info(
                 f"Viendo Semana **{ctx['selector_week']}** · Hoy es Semana **{ctx['today_week']}** en el calendario."
             )
+            if st.button(
+                f"✅ Continuar el programa desde Semana {ctx['selector_week']}",
+                key="adopt_week_from_selector",
+                help="Hace que hoy cuente como esa semana (recalcula la fecha de inicio)",
+            ):
+                self.set_current_program_week(ctx['selector_week'])
+                st.rerun()
 
         col1, col2, col3 = st.columns([3, 1, 1])
         with col1:
