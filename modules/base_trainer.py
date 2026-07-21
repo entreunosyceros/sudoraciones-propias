@@ -25,6 +25,8 @@ from .paths import (
 class BaseTrainer:
     """Clase base con funcionalidad core del sistema"""
 
+    _init_recursion_guard = False
+
     USER_SETTINGS_FILE = USER_SETTINGS_FILE
 
     DEFAULT_USER_EQUIPMENT = {
@@ -123,25 +125,28 @@ class BaseTrainer:
         
         # Configurar estado de sesión con auto-detección de semana
         if 'current_week' not in st.session_state:
-            # Auto-detectar la semana actual basada en el progreso
-            auto_week = self.get_auto_detected_week()
-            st.session_state.current_week = auto_week
+            if not BaseTrainer._init_recursion_guard:
+                BaseTrainer._init_recursion_guard = True
+                try:
+                    auto_week = self.get_auto_detected_week()
+                    st.session_state.current_week = auto_week
+                finally:
+                    BaseTrainer._init_recursion_guard = False
+            else:
+                st.session_state.current_week = 1
         if 'current_tab' not in st.session_state:
             st.session_state.current_tab = 0
         
         # Inicializar sistema de mapeo calendario si no existe
         self.initialize_calendar_mapping()
-        
-        # Invalidar cache para asegurar datos frescos
-        if hasattr(st, 'cache_data'):
-            st.cache_data.clear()
     
     def _get_training_plan_module(self):
-        """Instancia compartida de TrainingPlanModule con config y progreso actuales."""
+        """Instancia ligera de TrainingPlanModule (sin __init__ → evita recursión)."""
         from .training_plan import TrainingPlanModule
-        trainer = TrainingPlanModule()
+        trainer = object.__new__(TrainingPlanModule)
         trainer.config = self.config
         trainer.progress_data = self.progress_data
+        trainer.user_settings = getattr(self, 'user_settings', {})
         return trainer
 
     def has_training_progress(self) -> bool:
@@ -237,11 +242,7 @@ class BaseTrainer:
     def get_week_completion_stats(self) -> Dict[str, Any]:
         """Obtener estadísticas de completado de la semana actual del programa."""
         current_week = st.session_state.get('current_week', 1)
-        from .training_plan import TrainingPlanModule
-        tp = TrainingPlanModule()
-        tp.config = self.config
-        tp.progress_data = self.progress_data
-        return tp.get_week_completion_stats(current_week)
+        return self._get_training_plan_module().get_week_completion_stats(current_week)
     
     # --- NUEVO: Utilidades para alternar antebrazos y progresión por nivel ---
     def _get_forearm_exercises(self) -> list[dict]:

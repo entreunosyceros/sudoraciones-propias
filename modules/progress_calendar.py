@@ -125,11 +125,7 @@ class ProgressModule(BaseTrainer):
             return self.get_pending_day_stats()
 
         week_num = self.get_training_week_for_date(date_str)
-        from .training_plan import TrainingPlanModule
-        tp = TrainingPlanModule()
-        tp.config = self.config
-        tp.progress_data = self.progress_data
-        return tp.get_day_completion_stats(date_str, week_num)
+        return self._get_training_plan_module().get_day_completion_stats(date_str, week_num)
 
     def render_calendar(self, year: int, month: int, view_week: int | None = None):
         """Renderizar calendario con porcentajes filtrados por semana específica o acumulativo"""
