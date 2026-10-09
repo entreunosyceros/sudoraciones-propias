@@ -4,7 +4,7 @@
 
 ## Antes de empezar
 
-- Lee el [README](README.md) para entender el alcance del proyecto.
+- Lee el [README](README.md) y la [documentación](docs/README.md) para entender el alcance del proyecto.
 - Revisa [issues abiertas](https://github.com/sapoclay/sudoraciones-propias/issues) por si alguien ya trabaja en lo mismo.
 - Para dudas de comportamiento en la comunidad, consulta el [Código de conducta](CODE_OF_CONDUCT.md).
 
@@ -13,7 +13,7 @@
 - **Reportar errores** con pasos claros para reproducirlos.
 - **Proponer mejoras** explicando el problema que resuelven.
 - **Enviar pull requests** con cambios acotados y probados.
-- **Mejorar documentación** (README, comentarios, textos de la app).
+- **Mejorar documentación** (README, carpeta `docs/`, comentarios, textos de la app).
 - **Ampliar la base de alimentos** en `data/alimentos_es.json` (nombre, aliases, macros por 100 g, ración típica).
 
 ## Entorno de desarrollo
@@ -54,7 +54,7 @@ sudoraciones start
 2. Describe **qué** cambias y **por qué**.
 3. Indica cómo lo has probado (pasos manuales o capturas si aplica).
 4. Si tocas nutrición o entrenamiento, menciona el impacto en usuarios con datos guardados (`progress_data.json`, `config.json`).
-5. Actualiza el README solo si el cambio lo requiere.
+5. Actualiza el README o `docs/` solo si el cambio lo requiere.
 
 Usa la [plantilla de pull request](.github/pull_request_template.md) al abrir el PR.
 
