@@ -68,10 +68,7 @@ class ExerciseLibraryModule(BaseTrainer):
                         show_video=True,
                     )
                 else:
-                    youtube_url = exercise.get('youtube_url', '')
-                    if youtube_url:
-                        st.markdown("**🎥 Video:**")
-                        st.video(youtube_url)
+                    self.render_exercise_media(exercise, show_video=True, show_gif=True)
     
     def render_category_section(self, category_name: str, category_label: str, exercises: List[Dict], filters: Dict):
         """Renderizar sección de categoría de ejercicios"""

@@ -4,10 +4,11 @@ Contiene la funcionalidad core del sistema
 """
 import json
 import os
+import re
 import datetime
 import hashlib
 import shutil
-from typing import Dict, List, Any
+from typing import Dict, Any
 import streamlit as st
 
 from .paths import (
@@ -16,9 +17,9 @@ from .paths import (
     PROGRESS_BACKUP_FILE,
     PROGRESS_FILE,
     USER_SETTINGS_FILE,
-    app_path,
     data_path,
     ensure_data_dir,
+    resolve_exercise_gif,
 )
 
 
@@ -244,25 +245,7 @@ class BaseTrainer:
         current_week = st.session_state.get('current_week', 1)
         return self._get_training_plan_module().get_week_completion_stats(current_week)
     
-    # --- NUEVO: Utilidades para alternar antebrazos y progresión por nivel ---
-    def _get_forearm_exercises(self) -> list[dict]:
-        exercises = self.config.get('exercises', {}).get('brazos', [])
-        return [e for e in exercises if e.get('category') == 'forearm']
-    
-    def _choose_forearm_exercise_name(self, day_key: str, week_number: int) -> str | None:
-        forearms = self._get_forearm_exercises()
-        if not forearms:
-            return None
-        # Rotación determinística por semana y día (0=lun..6=dom)
-        day_names = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
-        day_idx = day_names.index(day_key) if day_key in day_names else 0
-        idx = ((week_number - 1) * 7 + day_idx) % len(forearms)
-        return forearms[idx]['name']
-    
-    def _get_level_for_week(self, week_number: int) -> int:
-        info = self.get_week_info(week_number)
-        return info.get('level', 1)
-    
+    # --- Utilidades de progresión por nivel ---
     def _parse_rep_range_bounds(self, reps: str) -> tuple[int | None, int | None]:
         """Extraer límite inferior y superior numérico de un string de repeticiones."""
         if '(7+7+7)' in reps or 'segundo' in reps.lower() or 'km' in reps.lower():
@@ -442,19 +425,6 @@ class BaseTrainer:
             level_bonus = (level - 1) * 2
             display_reps = self._apply_rep_increment(progression_base, week_bonus + level_bonus)
         return display_sets, display_reps
-
-    def get_general_progression(self, level: int, original_reps: str, week_in_cycle: int = 1) -> str:
-        """Compatibilidad: progresión de reps sin contexto de ejercicio completo."""
-        if 'segundo' in original_reps.lower() or 'km' in original_reps.lower():
-            if self._parse_time_range_seconds(original_reps)[0] is not None:
-                return self._progress_plank_time(original_reps, level)
-            return original_reps
-        if level >= 3:
-            return self._get_progression_rep_base(original_reps)
-        week_bonus = week_in_cycle - 1
-        level_bonus = (level - 1) * 2
-        progression_base = self._get_progression_rep_base(original_reps)
-        return self._apply_rep_increment(progression_base, week_bonus + level_bonus)
 
     def get_planned_exercises_for_group(self, muscle_group: str, day_key: str, week_number: int) -> list[dict]:
         """Devolver ejercicios planificados con tope de 6 por sesión, rotación y calistenia como complemento"""
@@ -860,16 +830,27 @@ class BaseTrainer:
 
     def load_nutrition_data(self) -> Dict[str, Any]:
         """Cargar datos de nutrición (lectura compartida entre módulos)"""
-        nutrition_file = NUTRITION_FILE
-        if os.path.exists(nutrition_file):
+        if os.path.exists(NUTRITION_FILE):
             try:
-                with open(nutrition_file, 'r', encoding='utf-8') as f:
+                with open(NUTRITION_FILE, 'r', encoding='utf-8') as f:
                     return json.load(f)
             except (json.JSONDecodeError, OSError):
                 pass
         return {
-            'profile': {},
-            'targets': {},
+            'profile': {
+                'age': None,
+                'weight': None,
+                'height': None,
+                'sex': 'M',
+                'activity_level': 'moderate',
+                'goal': 'maintain',
+            },
+            'targets': {
+                'calories': None,
+                'protein_g': None,
+                'carbs_g': None,
+                'fat_g': None,
+            },
             'daily_logs': {},
             'weight_log': {},
         }
@@ -929,12 +910,11 @@ class BaseTrainer:
         target_calories = targets.get('calories')
 
         week_weights = []
-        day_names = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
 
         for date_str in dates:
             try:
                 date_obj = datetime.datetime.strptime(date_str, '%Y-%m-%d')
-                day_key = day_names[date_obj.weekday()]
+                day_key = self.DAY_KEYS[date_obj.weekday()]
             except ValueError:
                 continue
 
@@ -1035,10 +1015,9 @@ class BaseTrainer:
                     f"progress_data_backup_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
                 )
                 try:
-                    import shutil
                     shutil.copy(PROGRESS_FILE, backup_name)
                     st.info(f"Backup creado: {backup_name}")
-                except:
+                except OSError:
                     pass
         
         # Datos por defecto
@@ -1173,10 +1152,6 @@ class BaseTrainer:
         except ValueError:
             return False
 
-    def get_program_week_for_date(self, date_str: str) -> int:
-        """Semana de entrenamiento del programa para una fecha (mapeo calendario)."""
-        return self.get_calendar_week_for_date(date_str)
-
     def get_training_week_for_date(self, date_str: str) -> int:
         """Semana efectiva para planificar y marcar ejercicios."""
         if self.is_before_program_start(date_str):
@@ -1260,32 +1235,6 @@ class BaseTrainer:
             }
         return week_dates
     
-    def get_all_weeks_formatted(self):
-        """Get all weeks mapping in Spanish DD-MM-YYYY format"""
-        mapping = self.progress_data.get('calendar_mapping', {})
-        formatted_mapping = {}
-        for week, week_data in mapping.items():
-            formatted_mapping[week] = {
-                'start_date': self.format_date_to_spanish(week_data['start_date']),
-                'end_date': self.format_date_to_spanish(week_data['end_date']),
-                'dates': [self.format_date_to_spanish(date) for date in week_data.get('dates', [])]
-            }
-        return formatted_mapping
-    
-    def display_calendar_mapping_formatted(self):
-        """Display calendar mapping in Spanish format for debug/config purposes"""
-        mapping = self.get_all_weeks_formatted()
-        for week, week_data in mapping.items():
-            st.caption(f"Semana {week}: {week_data['start_date']} a {week_data['end_date']}")
-    
-    def get_calendar_mapping_display_text(self):
-        """Get calendar mapping as formatted text for display"""
-        mapping = self.get_all_weeks_formatted()
-        lines = []
-        for week, week_data in mapping.items():
-            lines.append(f"Semana {week}: {week_data['start_date']} a {week_data['end_date']}")
-        return "\n".join(lines)
-
     def set_program_start_date(self, start_date: str):
         """Configurar fecha de inicio del programa de entrenamiento"""
         try:
@@ -1316,9 +1265,6 @@ class BaseTrainer:
             except ValueError:
                 return self.progress_data['program_start_date']
         return None
-        
-        # Guardar la migración
-        self.save_progress_data_internal(data)
 
     def save_progress_data_internal(self, data: Dict[str, Any]):
         """Método interno para guardar datos específicos (usado en migración)"""
@@ -1343,12 +1289,10 @@ class BaseTrainer:
                         id_muscle_group = parts[0]
                         
                         # Buscar dónde termina el nombre del ejercicio y empieza el día
-                        day_parts = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
-                        
                         # Encontrar el día en el ID
                         day_index = -1
                         for i, part in enumerate(parts):
-                            if part in day_parts:
+                            if part in self.DAY_KEYS:
                                 day_index = i
                                 break
                         
@@ -1362,19 +1306,6 @@ class BaseTrainer:
                                 count += 1
         
         return count
-
-    def get_total_exercise_completions(self) -> Dict[str, int]:
-        """Obtener el conteo total de completados para todos los ejercicios"""
-        completion_counts = {}
-        
-        for muscle_group, exercises in self.config.get('exercises', {}).items():
-            for exercise in exercises:
-                exercise_key = f"{muscle_group}_{exercise['name']}"
-                completion_counts[exercise_key] = self.get_exercise_completion_count(
-                    muscle_group, exercise['name']
-                )
-        
-        return completion_counts
 
     def save_progress_data(self):
         """Guardar datos de progreso"""
@@ -1516,76 +1447,7 @@ class BaseTrainer:
         """Estadísticas de completado de un día (delegado al plan de entrenamiento)."""
         return self._get_training_plan_module().get_day_completion_stats(date_str, week_number)
 
-    def render_exercise_details(self, exercise: Dict[str, Any], muscle_group: str, day_key: str, show_videos: bool, show_instructions: bool, show_tips: bool, week_number: int | None = None):
-        """Renderizar detalles de un ejercicio completo"""
-        if week_number is None:
-            current_week = int(st.session_state.get('current_week', 1))
-        else:
-            current_week = week_number
-        
-        exercise_name = exercise['name']
-        exercise_id = f"{muscle_group}_{exercise_name}_{day_key}_week{current_week}"
-        
-        # Obtener fecha actual para marcar progreso
-        current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-        is_completed = self.is_exercise_completed(current_date, exercise_id, current_week)
-        
-        # Checkbox de completado prominente
-        col_checkbox, col_title = st.columns([1, 4])
-        with col_checkbox:
-            completed = st.checkbox(
-                "✅ Marcar",
-                value=is_completed,
-                key=self.generate_unique_key("exercise_completed", exercise_id, current_date),
-                help=f"Marcar {exercise_name} como completado hoy"
-            )
-            if completed != is_completed:
-                self.mark_exercise_completed(current_date, exercise_id, completed, current_week)
-                # Forzar recarga del progreso para asegurar persistencia
-                self.reload_progress_data()
-                # Forzar actualización de la interfaz para mostrar el progreso actualizado
-                st.rerun()
-                self.reload_progress_data()
-                if completed:
-                    st.success(f"🎉 ¡{exercise_name} completado!")
-                else:
-                    st.info(f"📋 {exercise_name} marcado como pendiente")
-                st.rerun()
-        
-        # Progresión dinámica según semana del programa
-        display_sets, display_reps = self.get_exercise_progression(exercise, current_week)
-        
-        with col_title:
-            # Obtener nivel de dificultad del ejercicio
-            difficulty_level = exercise.get('difficulty_level', 1)
-            difficulty_colors = ["", "🟢", "🟡", "🟠", "🔴"]
-            difficulty_names = ["", "Principiante", "Intermedio", "Avanzado", "Experto"]
-            difficulty_emoji = difficulty_colors[difficulty_level] if difficulty_level <= 4 else "🔥"
-            difficulty_name = difficulty_names[difficulty_level] if difficulty_level <= 4 else "Maestro"
-            
-            status_emoji = "✅" if completed else "⭕"
-            st.markdown(f"### {status_emoji} {difficulty_emoji} {exercise_name}")
-            st.markdown(f"**Series:** {display_sets} | **Reps:** {display_reps} | **Nivel:** {difficulty_name} | **Grupo:** {muscle_group.title()}")
-        
-        with st.expander(f"ℹ️ Ver detalles de {exercise_name}", expanded=False):
-            # Información del ejercicio
-            col1, col2 = st.columns([1, 1])
-            
-            with col1:
-                st.markdown("**📊 Información:**")
-                st.write(f"• Series: {display_sets}")
-                st.write(f"• Repeticiones: {display_reps}")
-                st.write(f"• Nivel: {difficulty_name} {difficulty_emoji}")
-                st.write(f"• Grupo Muscular: {muscle_group.title()}")
-                
-                st.markdown("**📝 Descripción:**")
-                st.write(exercise.get('description', ''))
-            
-            with col2:
-                # ...existing code...
-                pass
-
-    # --- NUEVOS MÉTODOS: estado de ejercicios y utilidades de YouTube ---
+    # --- Estado de ejercicios y utilidades de YouTube ---
     def is_exercise_completed(self, date_str: str, exercise_id: str, week_number: int | None = None) -> bool:
         """Comprobar si un ejercicio (con sufijo de semana) está marcado como completado para una fecha dada."""
         if 'completed_exercises' not in self.progress_data:
@@ -1639,8 +1501,6 @@ class BaseTrainer:
         """Extraer ID del video de YouTube de cualquier formato de URL."""
         if not url:
             return ""
-        
-        import re
         
         # Para shorts: https://www.youtube.com/shorts/pvb7SYiaMAw
         shorts_match = re.search(r'youtube\.com/shorts/([a-zA-Z0-9_-]+)', url)
@@ -1705,15 +1565,30 @@ class BaseTrainer:
             # Fallback: mostrar enlace directo
             st.markdown(f"[🎥 Ver video en YouTube]({url})")
 
-    def render_youtube_video_old(self, url: str):
-        """Renderizar video de YouTube (método anterior como fallback)."""
-        if not url:
+    def render_exercise_gif(self, exercise: Dict[str, Any]) -> bool:
+        """Mostrar GIF animado del ejercicio si el archivo existe. Devuelve True si se mostró."""
+        gif_path = resolve_exercise_gif(exercise)
+        if not gif_path:
+            return False
+        st.markdown("### 🎞️ Demostración animada")
+        st.image(gif_path, use_container_width=True)
+        return True
+
+    def render_exercise_media(
+        self,
+        exercise: Dict[str, Any],
+        show_video: bool = True,
+        show_gif: bool = True,
+    ) -> None:
+        """Mostrar GIF o YouTube de forma excluyente (prioridad al GIF si existe)."""
+        if show_gif and self.render_exercise_gif(exercise):
             return
-        # Streamlit soporta directamente st.video con URLs de YouTube
-        try:
-            st.video(url)
-        except Exception as e:
-            st.warning(f"No se pudo renderizar el video: {e}")
+
+        youtube_url = exercise.get('youtube_url', '')
+        if youtube_url and show_video:
+            title = "### 🎥 Video Tutorial (Short)" if 'shorts/' in youtube_url else "### 🎥 Video Tutorial"
+            st.markdown(title)
+            self.render_youtube_video(youtube_url)
 
     def render_youtube_url_editor(
         self,
@@ -1722,20 +1597,16 @@ class BaseTrainer:
         *context_parts,
         show_video: bool = True,
     ) -> None:
-        """Mostrar y permitir editar la URL de YouTube de un ejercicio."""
+        """Mostrar demo (GIF o YouTube) y permitir editar la URL de YouTube."""
         exercise_name = exercise.get('name', '')
-        youtube_url = exercise.get('youtube_url', '')
 
-        if youtube_url and show_video:
-            title = "### 🎥 Video Tutorial (Short)" if 'shorts/' in youtube_url else "### 🎥 Video Tutorial"
-            st.markdown(title)
-            self.render_youtube_video(youtube_url)
+        self.render_exercise_media(exercise, show_video=show_video, show_gif=True)
 
         st.markdown("### 🔗 Configurar Video Tutorial")
         input_key = self.generate_unique_key("youtube_url", muscle_group, exercise_name, *context_parts)
         new_url = st.text_input(
             "URL de YouTube:",
-            value=youtube_url,
+            value=exercise.get('youtube_url', ''),
             key=input_key,
             placeholder="Ej: https://www.youtube.com/shorts/35_gCUE3SmM",
         )

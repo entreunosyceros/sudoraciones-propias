@@ -31,8 +31,7 @@ class TrainingPlanModule(BaseTrainer):
         
         # Determinar día de la semana
         date_obj = datetime.datetime.strptime(date_str, '%Y-%m-%d')
-        day_names = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
-        day_key = day_names[date_obj.weekday()]
+        day_key = self.DAY_KEYS[date_obj.weekday()]
         
         muscle_groups = week_plan.get(day_key, [])
         
@@ -90,10 +89,11 @@ class TrainingPlanModule(BaseTrainer):
         total_exercises = 0
         completed_exercises = 0
         day_stats = []
+
+        # Una sola recarga antes del bucle (antes se leía el JSON 7 veces)
+        self.reload_progress_data()
         
         for date_str in week_dates['dates']:
-            # Recalcular stats en tiempo real para asegurar datos actualizados
-            self.reload_progress_data()
             day_stat = self.get_day_completion_stats(date_str, week_num)
             day_stats.append({
                 'date': date_str,
@@ -246,25 +246,7 @@ class TrainingPlanModule(BaseTrainer):
                 new_schedule = advanced_plan
                 break
         
-        return new_schedule if mode != "advanced" else new_schedule
-
-    def get_complementary_muscle(self, existing_groups: List[str]) -> List[str]:
-        """Obtener grupo muscular complementario"""
-        complements = {
-            'pecho': ['hombros'],
-            'espalda': ['brazos'],
-            'hombros': ['pecho'],
-            'brazos': ['abs'],
-            'piernas': ['abs'],
-            'abs': [],
-            'cardio': []
-        }
-        
-        for group in existing_groups:
-            complement = complements.get(group, [])
-            if complement and complement[0] not in existing_groups:
-                return complement
-        return []
+        return new_schedule
 
     def get_detailed_instructions(
         self,

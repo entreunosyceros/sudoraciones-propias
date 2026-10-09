@@ -211,7 +211,6 @@ class ModernHeavyDutyTrainer:
         
         # Actualizar datos en memoria
         self.base_trainer.progress_data = fresh_progress_data
-        self.progress_data = fresh_progress_data
         
         # Reinicializar mapeo calendario
         self.base_trainer.initialize_calendar_mapping()
@@ -311,24 +310,8 @@ class ModernHeavyDutyTrainer:
                 st.session_state.show_date_config = True
             
             if st.session_state.get('show_date_config', False):
-                import datetime
-                
-                # Obtener fecha actual o fecha guardada
-                start_date_internal = self.base_trainer.progress_data.get('program_start_date', 'No configurada')
-                if start_date_internal != 'No configurada':
-                    try:
-                        default_date = datetime.datetime.strptime(start_date_internal, '%Y-%m-%d').date()
-                    except:
-                        default_date = datetime.date.today()
-                else:
-                    # Por defecto, el lunes de esta semana
-                    today = datetime.date.today()
-                    default_date = today - datetime.timedelta(days=today.weekday())
-                
-                # Obtener fecha actual para mostrar como placeholder
                 current_display = self.base_trainer.get_program_start_date_display()
                 
-                # Solo un campo de texto para fecha en formato DD/MM/YYYY
                 date_text = st.text_input(
                     "Fecha de inicio del programa (DD/MM/YYYY):",
                     value=current_display if current_display else "",
@@ -488,7 +471,7 @@ class ModernHeavyDutyTrainer:
             # Pie de página
             st.markdown("---")
             st.markdown(
-                "💪 **Sudoraciones Propias v1.4.0** - Sistema de Entrenamiento con Mapeo Calendario  \n"
+                "💪 **Sudoraciones Propias v1.4.1** - Sistema de Entrenamiento con Mapeo Calendario  \n"
                 "🚀 Desarrollado con ☕ Python & Streamlit  \n"
                 "📅 **Nuevo**: Semanas de entrenamiento sincronizadas con fechas reales  \n"
                 "**Creado por entreunosyceros**",

@@ -9,6 +9,7 @@ import sys
 import subprocess
 import time
 import venv
+import webbrowser
 from pathlib import Path
 
 APP_ROOT = Path(__file__).resolve().parent
@@ -17,6 +18,13 @@ if str(APP_ROOT) not in sys.path:
     sys.path.insert(0, str(APP_ROOT))
 
 from modules.paths import CONFIG_FILE, PROGRESS_FILE, app_path
+
+def open_default_browser(url: str) -> bool:
+    """Abrir la URL en el navegador predeterminado del sistema."""
+    try:
+        return bool(webbrowser.open(url, new=2))
+    except Exception:
+        return False
 
 # Suprimir warnings molestos del navegador/TensorFlow
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -34,21 +42,20 @@ def get_venv_path():
     """Obtener la ruta del entorno virtual"""
     return APP_ROOT / "venv_sudoraciones"
 
+def _venv_bin(name: str) -> Path:
+    """Ruta a un ejecutable del venv (Windows Scripts/ vs Unix bin/)."""
+    venv_path = get_venv_path()
+    if os.name == 'nt':
+        return venv_path / "Scripts" / f"{name}.exe"
+    return venv_path / "bin" / name
+
 def get_venv_python():
     """Obtener la ruta del Python del entorno virtual"""
-    venv_path = get_venv_path()
-    if os.name == 'nt':  # Windows
-        return venv_path / "Scripts" / "python.exe"
-    else:  # Linux/Mac
-        return venv_path / "bin" / "python"
+    return _venv_bin("python")
 
 def get_venv_pip():
     """Obtener la ruta del pip del entorno virtual"""
-    venv_path = get_venv_path()
-    if os.name == 'nt':  # Windows
-        return venv_path / "Scripts" / "pip.exe"
-    else:  # Linux/Mac
-        return venv_path / "bin" / "pip"
+    return _venv_bin("pip")
 
 def create_virtual_environment():
     """Crear entorno virtual si no existe"""
@@ -120,14 +127,14 @@ def get_total_exercises_count():
         for exercises in config.get('exercises', {}).values():
             total += len(exercises)
         return total
-    except:
+    except (OSError, ValueError, TypeError, KeyError):
         return 42  # Valor por defecto si no se puede leer
 
 def print_banner():
     """Mostrar banner de inicio"""
     total_exercises = get_total_exercises_count()
     print("\n" + "="*60)
-    print("🎯 SUDORACIONES PROPIAS v1.4.0 - SISTEMA DE ENTRENAMIENTO")
+    print("🎯 SUDORACIONES PROPIAS v1.4.1 - SISTEMA DE ENTRENAMIENTO")
     print("="*60)
     print("💪 Entrenamiento Personalizado para Principiantes y Expertos")
     print(f"🏋️ {total_exercises} ejercicios especializados con progresión automática")
@@ -137,58 +144,37 @@ def print_banner():
     print("🏗️ Arquitectura Modular Optimizada")
     print("="*60)
 
+def _check_venv_package(venv_python: Path, package: str, label: str) -> bool:
+    """Verificar que un paquete esté instalado en el entorno virtual."""
+    try:
+        cmd = [str(venv_python), "-c", f"import {package}; print({package}.__version__)"]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            print(f"  ✅ {label} {result.stdout.strip()}")
+            return True
+        print(f"  ❌ {label} no encontrado en entorno virtual")
+        return False
+    except Exception:
+        print(f"  ❌ Error verificando {label}")
+        return False
+
 def check_dependencies():
     """Verificar dependencias necesarias en el entorno virtual"""
     print("🔍 Verificando dependencias en entorno virtual...")
     
-    # Usar el Python del entorno virtual para verificar
     venv_python = get_venv_python()
     
     if not venv_python.exists():
         print("  ❌ Entorno virtual no encontrado")
         return False
     
-    # Verificar Streamlit
-    try:
-        cmd = [str(venv_python), "-c", "import streamlit; print(streamlit.__version__)"]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-        if result.returncode == 0:
-            version = result.stdout.strip()
-            print(f"  ✅ Streamlit {version}")
-        else:
-            print("  ❌ Streamlit no encontrado en entorno virtual")
+    for package, label in (
+        ('streamlit', 'Streamlit'),
+        ('pandas', 'Pandas'),
+        ('plotly', 'Plotly'),
+    ):
+        if not _check_venv_package(venv_python, package, label):
             return False
-    except Exception:
-        print("  ❌ Error verificando Streamlit")
-        return False
-    
-    # Verificar Pandas
-    try:
-        cmd = [str(venv_python), "-c", "import pandas; print(pandas.__version__)"]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-        if result.returncode == 0:
-            version = result.stdout.strip()
-            print(f"  ✅ Pandas {version}")
-        else:
-            print("  ❌ Pandas no encontrado en entorno virtual")
-            return False
-    except Exception:
-        print("  ❌ Error verificando Pandas")
-        return False
-    
-    # Verificar Plotly
-    try:
-        cmd = [str(venv_python), "-c", "import plotly; print(plotly.__version__)"]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-        if result.returncode == 0:
-            version = result.stdout.strip()
-            print(f"  ✅ Plotly {version}")
-        else:
-            print("  ❌ Plotly no encontrado en entorno virtual")
-            return False
-    except Exception:
-        print("  ❌ Error verificando Plotly")
-        return False
     
     return True
 
@@ -342,26 +328,29 @@ def start_streamlit():
                     result = subprocess.run(['curl', '-s', '-o', '/dev/null', '-w', '%{http_code}', f'http://localhost:{port}'], 
                                           capture_output=True, text=True, timeout=5)
                     server_running = result.stdout.strip() == "200"
-                except:
+                except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
                     server_running = False
 
         if server_running:
             print("  ✅ ¡Servidor iniciado correctamente!")
             print(f"  📱 Aplicación: {app_file}")
-            # Retornar las URLs en lugar de imprimirlas aquí
-        if server_running:
-            print("  ✅ ¡Servidor iniciado correctamente!")
-            print(f"  📱 Aplicación: {app_file}")
-            # Retornar las URLs en lugar de imprimirlas aquí
+            local_url = f"http://localhost:{port}"
+            # Headless evita que Streamlit abra el navegador; lo abrimos nosotros
+            browser_opened = open_default_browser(local_url)
+            if browser_opened:
+                print(f"  🌐 Navegador abierto: {local_url}")
+            else:
+                print(f"  ⚠️ No se pudo abrir el navegador automáticamente: {local_url}")
             return {
                 'success': True,
-                'local_url': f"http://localhost:{port}",
+                'local_url': local_url,
                 'external_url': f"http://0.0.0.0:{port}",
-                'app_file': app_file
+                'app_file': app_file,
+                'browser_opened': browser_opened,
             }
-        else:
-            print("  ❌ Error: servidor no responde")
-            return {'success': False}
+
+        print("  ❌ Error: servidor no responde")
+        return {'success': False}
             
     except Exception as e:
         print(f"  ❌ Error al iniciar: {e}")
@@ -396,7 +385,7 @@ def show_summary():
     print("  • Abdominales (4): Tradicionales + Plancha + Abdominales Bajas + Laterales")
     print("  • Cardio (1): Bicicleta Estática")
     print("")
-    print("� PROGRESIÓN POR NIVELES:")
+    print("📈 PROGRESIÓN POR NIVELES:")
     print("  • Nivel 1 (Semanas 1-4): 4 días/semana - Adaptación y técnica")
     print("  • Nivel 2 (Semanas 5-8): 5 días/semana - Incremento de frecuencia")
     print("  • Nivel 3 (Semanas 9-12): 6 días/semana - Intensidad avanzada")
@@ -448,7 +437,10 @@ def main():
     if server_result['success']:
         show_summary()
         print("\n🎉 ¡APLICACIÓN MODULAR LISTA PARA ENTRENAR!")
-        print("   Accede desde tu navegador a las siguientes URLs:")
+        if server_result.get('browser_opened'):
+            print("   El navegador predeterminado debería haberse abierto automáticamente.")
+        else:
+            print("   Accede manualmente desde tu navegador a las siguientes URLs:")
         print(f"   🌐 URL local: {server_result['local_url']}")
         print(f"   🌐 URL externa: {server_result['external_url']}")
         print(f"   📱 Aplicación: {server_result['app_file']} (Modular)")

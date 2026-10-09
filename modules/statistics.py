@@ -12,22 +12,12 @@ from .base_trainer import BaseTrainer
 class StatisticsModule(BaseTrainer):
     """Módulo para gestionar las estadísticas"""
     
-    # Diccionario de traducción de grupos musculares
-    MUSCLE_GROUP_TRANSLATIONS = {
-        'pecho': 'Pecho',
-        'espalda': 'Espalda', 
-        'hombros': 'Hombros',
-        'brazos': 'Brazos',
-        'piernas': 'Piernas',
-        'gemelos': 'Gemelos',
-        'abs': 'Abdominales',
-        'abdominales': 'Abdominales',
-        'cardio': 'Cardio'
-    }
-    
     def translate_muscle_group(self, group_name):
         """Traduce el nombre del grupo muscular al español"""
-        return self.MUSCLE_GROUP_TRANSLATIONS.get(group_name.lower(), group_name.title())
+        key = group_name.lower()
+        if key == 'abdominales':
+            key = 'abs'
+        return self.MUSCLE_GROUP_LABELS_ES.get(key, group_name.title())
     
     def filter_dates_from_program_start(self, completed_exercises):
         """Filtrar ejercicios solo desde la fecha de inicio del programa"""

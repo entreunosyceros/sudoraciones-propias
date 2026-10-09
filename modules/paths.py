@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
+import unicodedata
 
 _APP_ROOT = os.environ.get('SUDORACIONES_APP_ROOT')
 if _APP_ROOT:
@@ -13,6 +15,32 @@ else:
 
 def app_path(*parts: str) -> str:
     return os.path.join(APP_ROOT, *parts)
+
+
+def exercise_gif_slug(name: str) -> str:
+    """Slug de archivo para un ejercicio: minúsculas, sin acentos, espacios → _."""
+    normalized = unicodedata.normalize('NFKD', name or '')
+    ascii_name = normalized.encode('ascii', 'ignore').decode('ascii')
+    slug = ascii_name.lower().strip()
+    slug = re.sub(r'[^a-z0-9]+', '_', slug)
+    return slug.strip('_')
+
+
+def exercise_gif_relpath(name: str) -> str:
+    """Ruta relativa esperada del GIF de un ejercicio."""
+    return os.path.join('img', 'exercises', f'{exercise_gif_slug(name)}.gif')
+
+
+def resolve_exercise_gif(exercise: dict) -> str | None:
+    """Ruta absoluta del GIF si existe en disco; None si falta."""
+    rel = exercise.get('gif') or exercise_gif_relpath(exercise.get('name', ''))
+    if not rel:
+        return None
+    parts = rel.replace('\\', '/').split('/')
+    path = app_path(*parts)
+    if os.path.isfile(path):
+        return path
+    return None
 
 
 def _default_user_data_dir() -> str:
@@ -67,6 +95,7 @@ def _migrate_legacy_data_file(filename: str) -> None:
 
 CONFIG_FILE = app_path('config.json')
 LOGO_FILE = app_path('img', 'logo.png')
+EXERCISES_GIF_DIR = app_path('img', 'exercises')
 
 PROGRESS_FILE = data_path('progress_data.json')
 PROGRESS_BACKUP_FILE = data_path('progress_data_backup.json')

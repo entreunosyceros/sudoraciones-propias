@@ -28,7 +28,7 @@ Incluye:
 - Plan semanal por niveles (adaptado a tu equipamiento)
 - Seguimiento por ejercicio y por día
 - Calendario y estadísticas con indicadores semanales
-- Biblioteca de ejercicios con videos
+- Biblioteca de ejercicios con GIF o vídeo de YouTube (el GIF tiene prioridad si existe)
 - Complemento opcional en paralelas (calistenia)
 - Módulo de nutrición con calculadora, tracking diario y estimación automática de macros
 - Base local de alimentos en español + respaldo Open Food Facts
@@ -49,6 +49,7 @@ Incluye:
 - **Equipamiento configurable** en la barra lateral: el plan solo programa ejercicios que puedes hacer con lo que tienes en casa.
 - **Calendario de progreso** que respeta la fecha de inicio que elijas (sin forzar lunes).
 - **Biblioteca de ejercicios** con filtros por grupo muscular y equipamiento.
+- **Demostración GIF o YouTube:** si existe un GIF en `img/exercises/` se muestra solo el GIF; si no, el vídeo de YouTube (lista de nombres en `img/exercises/README.md`).
 - **58 ejercicios en el plan** (42 principales + 16 complementos en paralelas 🪜).
 
 ### Nutrición
@@ -400,8 +401,8 @@ En cada sesión, un panel indica por grupo muscular:
 ## Instalación (.deb)
 
 ```bash
-wget https://github.com/sapoclay/sudoraciones-propias/releases/download/v1.4.0/sudoraciones_1.4.0_amd64.deb
-sudo dpkg -i sudoraciones_1.4.0_amd64.deb
+wget https://github.com/sapoclay/sudoraciones-propias/releases/download/v1.4.1/sudoraciones_1.4.1_amd64.deb
+sudo dpkg -i sudoraciones_1.4.1_amd64.deb
 sudo apt-get install -f
 ```
 
@@ -435,7 +436,7 @@ Acceso web:
 - 🏋️ Plan de Entrenamiento — **sesión de hoy**, calentamiento sugerido, cobertura de rotación, marcar ejercicios
 - 📊 Progreso — calendario mensual y vista semanal
 - 📈 Estadísticas — métricas de entrenamiento e indicadores de coherencia
-- 📚 Biblioteca de Ejercicios — catálogo con filtros y videos
+- 📚 Biblioteca de Ejercicios — catálogo con filtros (GIF o YouTube)
 - 🍎 Nutrición — calculadora, tracking diario con estimador de macros, indicadores semanales
 - ℹ️ Información — documentación del programa dentro de la app
 
@@ -445,6 +446,11 @@ Acceso web:
 data/
 └── alimentos_es.json          # Base local de alimentos (español)
 
+img/
+├── logo.png
+└── exercises/                 # GIFs animados por ejercicio (opcionales)
+    └── README.md              # Tabla ejercicio → nombre de archivo
+
 modules/
 ├── __init__.py
 ├── base_trainer.py            # Planificación, equipamiento, coherencia semanal
@@ -452,9 +458,13 @@ modules/
 ├── exercise_library.py
 ├── info.py
 ├── nutrition.py
+├── paths.py
 ├── progress_calendar.py
 ├── statistics.py
 └── training_plan.py
+
+scripts/
+└── add_gif_fields.py          # Regenerar campos gif en config.json
 ```
 
 Archivos clave:

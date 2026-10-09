@@ -4,9 +4,8 @@ Proporciona calculadoras de calorías, macros y tracking básico de comidas
 """
 import streamlit as st
 import json
-import os
 import datetime
-from typing import Dict, Any, List
+from typing import Dict
 from .base_trainer import BaseTrainer
 from .estimador_alimentos import EstimadorAlimentos
 from .paths import NUTRITION_FILE, ensure_data_dir
@@ -21,35 +20,6 @@ class NutritionModule(BaseTrainer):
         self.nutrition_data = self.load_nutrition_data()
         self.estimador_alimentos = EstimadorAlimentos(usar_open_food_facts=True)
     
-    def load_nutrition_data(self) -> Dict[str, Any]:
-        """Cargar datos de nutrición"""
-        if os.path.exists(self.nutrition_file):
-            try:
-                with open(self.nutrition_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except:
-                pass
-        
-        # Datos por defecto
-        return {
-            'profile': {
-                'age': None,
-                'weight': None,
-                'height': None,
-                'sex': 'M',
-                'activity_level': 'moderate',
-                'goal': 'maintain'
-            },
-            'targets': {
-                'calories': None,
-                'protein_g': None,
-                'carbs_g': None,
-                'fat_g': None
-            },
-            'daily_logs': {},
-            'weight_log': {}
-        }
-    
     def save_nutrition_data(self):
         """Guardar datos de nutrición"""
         try:
@@ -58,14 +28,6 @@ class NutritionModule(BaseTrainer):
                 json.dump(self.nutrition_data, f, indent=2, ensure_ascii=False)
         except Exception as e:
             st.error(f"Error guardando datos de nutrición: {e}")
-    
-    def calculate_bmr(self, weight: float, height: float, age: int, sex: str) -> float:
-        """Calcular tasa metabólica basal usando Mifflin-St Jeor"""
-        if sex == 'M':
-            bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5
-        else:  # Female
-            bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161
-        return bmr
     
     def calculate_tdee(self, bmr: float, activity_level: str) -> float:
         """Calcular gasto energético total diario estimado (sin sesión de entrenamiento extra)"""

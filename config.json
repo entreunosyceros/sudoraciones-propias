@@ -22,7 +22,8 @@
         "reps": "6-8",
         "description": "Acostado en el banco, presiona las mancuernas hacia arriba",
         "youtube_url": "https://www.youtube.com/watch?v=VmB1G1K7v94",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/press_de_banca_con_mancuernas.gif"
       },
       {
         "name": "Flexiones de Pecho",
@@ -31,7 +32,8 @@
         "reps": "8-12",
         "description": "Flexiones básicas para desarrollar fuerza inicial del pecho",
         "youtube_url": "https://www.youtube.com/watch?v=R08gYyypGto",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/flexiones_de_pecho.gif"
       },
       {
         "name": "Press de Banca con Barra",
@@ -40,7 +42,8 @@
         "reps": "6-8",
         "description": "Acostado en el banco, presiona la barra hacia arriba con control total",
         "youtube_url": "https://www.youtube.com/watch?v=rT7DgCr-3pg",
-        "difficulty_level": 2
+        "difficulty_level": 2,
+        "gif": "img/exercises/press_de_banca_con_barra.gif"
       },
       {
         "name": "Aperturas con Mancuernas",
@@ -49,7 +52,8 @@
         "reps": "8-10",
         "description": "Acostado en el banco, abre los brazos en arco amplio",
         "youtube_url": "https://www.youtube.com/watch?v=OrlXQdNwNwM",
-        "difficulty_level": 2
+        "difficulty_level": 2,
+        "gif": "img/exercises/aperturas_con_mancuernas.gif"
       },
       {
         "name": "Press Inclinado con Barra",
@@ -58,7 +62,8 @@
         "reps": "8-10",
         "description": "En banco inclinado, presiona la barra trabajando pecho superior",
         "youtube_url": "https://www.youtube.com/shorts/SqT0lZDPm-Y",
-        "difficulty_level": 3
+        "difficulty_level": 3,
+        "gif": "img/exercises/press_inclinado_con_barra.gif"
       },
       {
         "name": "Flexiones con Mancuernas",
@@ -67,7 +72,8 @@
         "reps": "8-12",
         "description": "Flexiones con manos en mancuernas para mayor rango de movimiento",
         "youtube_url": "https://www.youtube.com/watch?v=cfns5VQ-Rhs",
-        "difficulty_level": 4
+        "difficulty_level": 4,
+        "gif": "img/exercises/flexiones_con_mancuernas.gif"
       },
       {
         "name": "Flexiones Profundas (Deficit Push-ups)",
@@ -77,7 +83,8 @@
         "description": "Agarra las barras inferiores y baja el pecho más allá del nivel de las manos para un rango de movimiento superior",
         "youtube_url": "https://www.youtube.com/watch?v=IODxDxX7oi4",
         "difficulty_level": 1,
-        "category": "calisthenics"
+        "category": "calisthenics",
+        "gif": "img/exercises/flexiones_profundas_deficit_push_ups.gif"
       },
       {
         "name": "Fondos con Torso Inclinado",
@@ -87,7 +94,8 @@
         "description": "En las barras superiores, inclínate hacia adelante para enfatizar la parte inferior del pectoral",
         "youtube_url": "https://www.youtube.com/watch?v=OUgsJ8-Vi0E",
         "difficulty_level": 2,
-        "category": "calisthenics"
+        "category": "calisthenics",
+        "gif": "img/exercises/fondos_con_torso_inclinado.gif"
       },
       {
         "name": "Fondos Clásicos (Dips)",
@@ -97,7 +105,8 @@
         "description": "Ejercicio estrella en barras superiores. La estructura inferior aporta estabilidad para progresar con lastre",
         "youtube_url": "https://www.youtube.com/watch?v=2z8JmcrW-te",
         "difficulty_level": 3,
-        "category": "calisthenics"
+        "category": "calisthenics",
+        "gif": "img/exercises/fondos_clasicos_dips.gif"
       }
     ],
     "espalda": [
@@ -108,7 +117,8 @@
         "reps": "8-10",
         "description": "Apoyado en banco, rema con una mancuerna",
         "youtube_url": "https://www.youtube.com/shorts/OoG6XtJeygk",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/remo_con_mancuernas.gif"
       },
       {
         "name": "Remo Inclinado con Mancuernas",
@@ -117,7 +127,8 @@
         "reps": "8-10",
         "description": "De pie inclinado, rema con ambas mancuernas simultáneamente",
         "youtube_url": "https://www.youtube.com/watch?v=pYcpY20QaE8",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/remo_inclinado_con_mancuernas.gif"
       },
       {
         "name": "Peso Muerto con Mancuernas",
@@ -126,7 +137,8 @@
         "reps": "8-10",
         "description": "Pies separados, baja manteniendo espalda recta",
         "youtube_url": "https://www.youtube.com/watch?v=7EFlWfvU59w",
-        "difficulty_level": 2
+        "difficulty_level": 2,
+        "gif": "img/exercises/peso_muerto_con_mancuernas.gif"
       },
       {
         "name": "Remo con Barra",
@@ -135,7 +147,8 @@
         "reps": "6-8",
         "description": "Inclinado hacia adelante, tira la barra hacia el abdomen",
         "youtube_url": "https://www.youtube.com/watch?v=9efgcAjQe7E",
-        "difficulty_level": 3
+        "difficulty_level": 3,
+        "gif": "img/exercises/remo_con_barra.gif"
       },
       {
         "name": "Peso Muerto con Barra",
@@ -144,7 +157,8 @@
         "reps": "6-8",
         "description": "Levanta la barra desde el suelo manteniendo la espalda recta",
         "youtube_url": "https://www.youtube.com/watch?v=op9kVnSso6Q",
-        "difficulty_level": 4
+        "difficulty_level": 4,
+        "gif": "img/exercises/peso_muerto_con_barra.gif"
       },
       {
         "name": "Remo Invertido Clásico (Agarre Neutro)",
@@ -154,7 +168,8 @@
         "description": "Paralelas juntas, cuerpo boca arriba entre ellas. Agarre neutro en los puños superiores, piernas estiradas apoyando solo los talones. Tira llevando el pecho a las barras apretando escápulas atrás. Trabaja dorsal ancho, romboides, trapecio medio y antebrazos",
         "youtube_url": "https://www.youtube.com/watch?v=hXTc1mZDYSU",
         "difficulty_level": 1,
-        "category": "calisthenics"
+        "category": "calisthenics",
+        "gif": "img/exercises/remo_invertido_clasico_agarre_neutro.gif"
       },
       {
         "name": "Remo Invertido Supino (Enfoque Dorsal y Bíceps)",
@@ -164,7 +179,8 @@
         "description": "Misma posición que el remo clásico, pero con palmas hacia la cara (agarre supino). Los codos viajan pegados al cuerpo para enfatizar dorsal inferior y bíceps",
         "youtube_url": "https://www.youtube.com/watch?v=GZbf-zSl0qM",
         "difficulty_level": 2,
-        "category": "calisthenics"
+        "category": "calisthenics",
+        "gif": "img/exercises/remo_invertido_supino_enfoque_dorsal_y_biceps.gif"
       },
       {
         "name": "Remo Invertido con Pies Elevados",
@@ -174,7 +190,8 @@
         "description": "Remo invertido con talones sobre banco, silla o sofá. Cuerpo casi paralelo al suelo para aumentar drásticamente el porcentaje de peso corporal. Trabaja espalda alta y erectores espinales",
         "youtube_url": "https://www.youtube.com/watch?v=9fItzuh9Iok",
         "difficulty_level": 3,
-        "category": "calisthenics"
+        "category": "calisthenics",
+        "gif": "img/exercises/remo_invertido_con_pies_elevados.gif"
       },
       {
         "name": "Remo Australiano en Tuck (Pies Suspendidos)",
@@ -184,7 +201,8 @@
         "description": "Colgado de las barras superiores con rodillas al pecho flotando en el aire. Desde suspensión pura, tira el cuerpo hacia arriba. Lo más cercano a una dominada estricta en paralelas",
         "youtube_url": "https://www.youtube.com/watch?v=9fItzuh9Iok",
         "difficulty_level": 4,
-        "category": "calisthenics"
+        "category": "calisthenics",
+        "gif": "img/exercises/remo_australiano_en_tuck_pies_suspendidos.gif"
       },
       {
         "name": "Encogimientos Escapulares en Inversión",
@@ -194,7 +212,8 @@
         "description": "Colgado boca arriba con brazos estirados y bloqueados. Junta y separa escápulas elevando el pecho unos centímetros sin flexionar codos. Aísla trapecio medio/inferior y romboides",
         "youtube_url": "https://www.youtube.com/watch?v=xQNrFHEMHA0",
         "difficulty_level": 1,
-        "category": "calisthenics"
+        "category": "calisthenics",
+        "gif": "img/exercises/encogimientos_escapulares_en_inversion.gif"
       }
     ],
     "hombros": [
@@ -205,7 +224,8 @@
         "reps": "6-8",
         "description": "De pie, empuja las mancuernas hacia arriba",
         "youtube_url": "https://www.youtube.com/shorts/pvb7SYiaMAw",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/press_militar_con_mancuernas.gif"
       },
       {
         "name": "Elevaciones Laterales",
@@ -214,7 +234,8 @@
         "reps": "8-10",
         "description": "Eleva los brazos lateralmente hasta la altura del hombro",
         "youtube_url": "https://www.youtube.com/watch?v=hgLpdwMtEEs",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/elevaciones_laterales.gif"
       },
       {
         "name": "Elevaciones Frontales",
@@ -223,7 +244,8 @@
         "reps": "8-12",
         "description": "De pie, eleva las mancuernas al frente hasta la altura del hombro",
         "youtube_url": "https://www.youtube.com/watch?v=qykGeo9Hsbg",
-        "difficulty_level": 2
+        "difficulty_level": 2,
+        "gif": "img/exercises/elevaciones_frontales.gif"
       },
       {
         "name": "Press Arnold",
@@ -232,7 +254,8 @@
         "reps": "8-10",
         "description": "Combina rotación y press vertical para trabajo completo de hombros",
         "youtube_url": "https://www.youtube.com/watch?v=6Z15_WdXmVw",
-        "difficulty_level": 3
+        "difficulty_level": 3,
+        "gif": "img/exercises/press_arnold.gif"
       },
       {
         "name": "Elevaciones Posteriores",
@@ -241,7 +264,8 @@
         "reps": "10-12",
         "description": "Inclinado hacia adelante, eleva las mancuernas hacia atrás trabajando deltoides posterior",
         "youtube_url": "https://www.youtube.com/watch?v=P3mKu0ByTsE",
-        "difficulty_level": 4
+        "difficulty_level": 4,
+        "gif": "img/exercises/elevaciones_posteriores.gif"
       },
       {
         "name": "Flexiones de Pica (Pike Push-ups)",
@@ -251,7 +275,8 @@
         "description": "Con los pies en el suelo y el cuerpo en forma de V, usa los agarres inferiores para trabajar la fuerza vertical de hombros",
         "youtube_url": "https://www.youtube.com/watch?v=spoSDxO2zM4",
         "difficulty_level": 2,
-        "category": "calisthenics"
+        "category": "calisthenics",
+        "gif": "img/exercises/flexiones_de_pica_pike_push_ups.gif"
       },
       {
         "name": "Soporte Isométrico (Soporte de Fondos)",
@@ -261,7 +286,8 @@
         "description": "Aguanta arriba del todo bloqueando codos y deprimiendo hombros. Excelente para la salud escapular",
         "youtube_url": "https://www.youtube.com/watch?v=K1WVCykpJb4",
         "difficulty_level": 3,
-        "category": "calisthenics"
+        "category": "calisthenics",
+        "gif": "img/exercises/soporte_isometrico_soporte_de_fondos.gif"
       }
     ],
     "brazos": [
@@ -272,7 +298,8 @@
         "reps": "6-8",
         "description": "Flexiona los brazos llevando las mancuernas hacia los hombros",
         "youtube_url": "https://www.youtube.com/shorts/MXpxtAbsm-o",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/curl_de_biceps.gif"
       },
       {
         "name": "Curl Martillo",
@@ -281,7 +308,8 @@
         "reps": "8-10",
         "description": "Curl con agarre neutro (palmas enfrentadas), enfoca braquial y braquiorradial",
         "youtube_url": "https://www.youtube.com/watch?v=zC3nLlEvin4",
-        "difficulty_level": 2
+        "difficulty_level": 2,
+        "gif": "img/exercises/curl_martillo.gif"
       },
       {
         "name": "Extensiones de Tríceps",
@@ -290,7 +318,8 @@
         "reps": "8-10",
         "description": "Acostado, baja la mancuerna hacia la frente",
         "youtube_url": "https://www.youtube.com/shorts/rGFXnq5aHQg",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/extensiones_de_triceps.gif"
       },
       {
         "name": "Fondos en Silla",
@@ -299,7 +328,8 @@
         "reps": "6-12",
         "description": "Sentado en el borde del banco, baja el cuerpo flexionando los brazos",
         "youtube_url": "https://www.youtube.com/watch?v=0326dy_-CzM",
-        "difficulty_level": 2
+        "difficulty_level": 2,
+        "gif": "img/exercises/fondos_en_silla.gif"
       },
       {
         "name": "Curl de Muñeca",
@@ -309,7 +339,8 @@
         "description": "Flexión de muñeca con agarre supino para trabajar flexores del antebrazo",
         "youtube_url": "https://www.youtube.com/watch?v=8hs5ZB9hWgk",
         "category": "forearm",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/curl_de_muneca.gif"
       },
       {
         "name": "Curl de Muñeca Inverso",
@@ -319,7 +350,8 @@
         "description": "Extensión de muñeca con agarre prono para trabajar extensores del antebrazo",
         "youtube_url": "https://www.youtube.com/watch?v=7f4nZtXsv1U",
         "category": "forearm",
-        "difficulty_level": 2
+        "difficulty_level": 2,
+        "gif": "img/exercises/curl_de_muneca_inverso.gif"
       },
       {
         "name": "Pronación/Supinación con Mancuerna",
@@ -329,7 +361,8 @@
         "description": "Rotación de antebrazo controlada para fortalecer pronadores y supinadores",
         "youtube_url": "https://www.youtube.com/watch?v=GZ0v8un6Xkg",
         "category": "forearm",
-        "difficulty_level": 3
+        "difficulty_level": 3,
+        "gif": "img/exercises/pronacion_supinacion_con_mancuerna.gif"
       },
       {
         "name": "Curl 21s",
@@ -338,7 +371,8 @@
         "reps": "21 (7+7+7)",
         "description": "7 repeticiones parciales abajo, 7 arriba, 7 completas - técnica avanzada",
         "youtube_url": "https://www.youtube.com/watch?v=cf_OjWMcJLs",
-        "difficulty_level": 4
+        "difficulty_level": 4,
+        "gif": "img/exercises/curl_21s.gif"
       },
       {
         "name": "Flexiones de Tríceps (Agarre Neutro)",
@@ -348,7 +382,8 @@
         "description": "Manos en los agarres inferiores con agarre neutro para aislar el tríceps y reducir estrés en muñecas",
         "youtube_url": "https://www.youtube.com/watch?v=6kALZikYxD0",
         "difficulty_level": 1,
-        "category": "calisthenics"
+        "category": "calisthenics",
+        "gif": "img/exercises/flexiones_de_triceps_agarre_neutro.gif"
       },
       {
         "name": "Fondos con Enfoque en Tríceps",
@@ -358,7 +393,8 @@
         "description": "Cuerpo totalmente vertical y codos pegados al cuerpo para maximizar el trabajo de tríceps",
         "youtube_url": "https://www.youtube.com/watch?v=6kALZikYxD0",
         "difficulty_level": 2,
-        "category": "calisthenics"
+        "category": "calisthenics",
+        "gif": "img/exercises/fondos_con_enfoque_en_triceps.gif"
       }
     ],
     "piernas": [
@@ -369,7 +405,8 @@
         "reps": "10-12",
         "description": "Baja como si te sentaras, mantén el pecho erguido",
         "youtube_url": "https://www.youtube.com/shorts/PFh39yoRSes",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/sentadillas_con_mancuernas.gif"
       },
       {
         "name": "Sentadillas Sin Peso",
@@ -378,7 +415,8 @@
         "reps": "12-15",
         "description": "Sentadillas básicas sin peso para dominar la técnica",
         "youtube_url": "https://www.youtube.com/watch?v=wJdCaP2LpNQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/sentadillas_sin_peso.gif"
       },
       {
         "name": "Zancadas con Mancuernas",
@@ -387,7 +425,8 @@
         "reps": "8-10 por pierna",
         "description": "Paso largo adelante, baja hasta 90 grados",
         "youtube_url": "https://www.youtube.com/watch?v=-iGRWD09Jn8",
-        "difficulty_level": 2
+        "difficulty_level": 2,
+        "gif": "img/exercises/zancadas_con_mancuernas.gif"
       },
       {
         "name": "Sentadillas Búlgaras",
@@ -396,7 +435,8 @@
         "reps": "8-10 por pierna",
         "description": "Un pie elevado atrás, baja con la pierna delantera hasta 90 grados",
         "youtube_url": "https://www.youtube.com/shorts/QMROpBczaGo",
-        "difficulty_level": 3
+        "difficulty_level": 3,
+        "gif": "img/exercises/sentadillas_bulgaras.gif"
       },
       {
         "name": "Sentadillas Pistol (Asistidas)",
@@ -405,7 +445,8 @@
         "reps": "5-8 por pierna",
         "description": "Sentadilla a una pierna con apoyo, ejercicio avanzado de equilibrio y fuerza",
         "youtube_url": "https://www.youtube.com/watch?v=vq5-vdgJc0I",
-        "difficulty_level": 4
+        "difficulty_level": 4,
+        "gif": "img/exercises/sentadillas_pistol_asistidas.gif"
       }
     ],
     "gemelos": [
@@ -416,7 +457,8 @@
         "reps": "15-20",
         "description": "De pie con mancuernas, elévate en puntillas contrayendo los gemelos",
         "youtube_url": "https://www.youtube.com/shorts/gwWv7aPcD7s",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/elevaciones_de_gemelos_de_pie.gif"
       },
       {
         "name": "Elevaciones de Gemelos Sin Peso",
@@ -425,7 +467,8 @@
         "reps": "20-25",
         "description": "Elevaciones básicas de gemelos sin peso para dominar el movimiento",
         "youtube_url": "https://www.youtube.com/watch?v=skWa37wgd7Y",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/elevaciones_de_gemelos_sin_peso.gif"
       },
       {
         "name": "Elevaciones de Gemelos Sentado",
@@ -434,7 +477,8 @@
         "reps": "12-15",
         "description": "Sentado en el banco, mancuernas en los muslos, elévate en puntillas",
         "youtube_url": "https://www.youtube.com/shorts/3wK8FzqzOeA",
-        "difficulty_level": 2
+        "difficulty_level": 2,
+        "gif": "img/exercises/elevaciones_de_gemelos_sentado.gif"
       },
       {
         "name": "Elevaciones de Gemelos a Una Pierna",
@@ -443,7 +487,8 @@
         "reps": "8-12 por pierna",
         "description": "Elevaciones de gemelos con una sola pierna para mayor intensidad",
         "youtube_url": "https://www.youtube.com/watch?v=JR6TFmIELEY",
-        "difficulty_level": 3
+        "difficulty_level": 3,
+        "gif": "img/exercises/elevaciones_de_gemelos_a_una_pierna.gif"
       },
       {
         "name": "Saltos de Gemelos",
@@ -452,7 +497,8 @@
         "reps": "15-20",
         "description": "Saltos explosivos trabajando la potencia de los gemelos",
         "youtube_url": "https://www.youtube.com/watch?v=cOmua3T1W38",
-        "difficulty_level": 4
+        "difficulty_level": 4,
+        "gif": "img/exercises/saltos_de_gemelos.gif"
       }
     ],
     "abs": [
@@ -463,7 +509,8 @@
         "reps": "15-20",
         "description": "Eleva el torso hacia las rodillas sin tirar del cuello",
         "youtube_url": "https://www.youtube.com/shorts/Dmfq8j6uR3A",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/abdominales_tradicionales.gif"
       },
       {
         "name": "Plancha",
@@ -472,7 +519,8 @@
         "reps": "30-60 segundos",
         "description": "Mantén el cuerpo recto como una tabla",
         "youtube_url": "https://www.youtube.com/shorts/3AM7L2k7BEw",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/plancha.gif"
       },
       {
         "name": "Plancha Lateral",
@@ -481,7 +529,8 @@
         "reps": "20-40 segundos por lado",
         "description": "Plancha de lado para trabajar oblicuos y estabilidad",
         "youtube_url": "https://www.youtube.com/watch?v=XeN4pEZZJNE",
-        "difficulty_level": 2
+        "difficulty_level": 2,
+        "gif": "img/exercises/plancha_lateral.gif"
       },
       {
         "name": "Plancha con Elevación de Brazos",
@@ -490,7 +539,8 @@
         "reps": "10-15 por brazo",
         "description": "Desde plancha, alterna elevando un brazo al frente",
         "youtube_url": "https://www.youtube.com/watch?v=bVPI9CjJXwE",
-        "difficulty_level": 4
+        "difficulty_level": 4,
+        "gif": "img/exercises/plancha_con_elevacion_de_brazos.gif"
       },
       {
         "name": "Elevaciones de Rodillas en Paralelas",
@@ -500,7 +550,8 @@
         "description": "Soportando tu peso en las barras superiores, sube rodillas al pecho de forma controlada",
         "youtube_url": "https://www.youtube.com/watch?v=JB2oyawG9KI",
         "difficulty_level": 1,
-        "category": "calisthenics"
+        "category": "calisthenics",
+        "gif": "img/exercises/elevaciones_de_rodillas_en_paralelas.gif"
       }
     ],
     "abs_avanzados": [
@@ -511,7 +562,8 @@
         "reps": "12-15",
         "description": "Acostado, eleva las piernas hacia el pecho manteniendo la espalda en el suelo",
         "youtube_url": "https://www.youtube.com/shorts/nbAm7uHDl1w",
-        "difficulty_level": 2
+        "difficulty_level": 2,
+        "gif": "img/exercises/abdominales_bajas.gif"
       },
       {
         "name": "Abdominales Laterales",
@@ -520,7 +572,8 @@
         "reps": "10-12 por lado",
         "description": "De lado, eleva el torso hacia la cadera trabajando los oblicuos",
         "youtube_url": "https://www.youtube.com/watch?v=tMd9SZjTrmg",
-        "difficulty_level": 3
+        "difficulty_level": 3,
+        "gif": "img/exercises/abdominales_laterales.gif"
       },
       {
         "name": "V-Ups",
@@ -529,7 +582,8 @@
         "reps": "8-12",
         "description": "Acostado, eleva simultáneamente piernas y torso formando una V",
         "youtube_url": "https://www.youtube.com/watch?v=7UVgs18Y1P4",
-        "difficulty_level": 4
+        "difficulty_level": 4,
+        "gif": "img/exercises/v_ups.gif"
       },
       {
         "name": "Elevaciones de Piernas Estiradas en Paralelas",
@@ -539,7 +593,8 @@
         "description": "Rodillas bloqueadas, sube los pies hasta formar un ángulo de 90° colgado de las barras",
         "youtube_url": "https://www.youtube.com/watch?v=JB2oyawG9KI",
         "difficulty_level": 3,
-        "category": "calisthenics"
+        "category": "calisthenics",
+        "gif": "img/exercises/elevaciones_de_piernas_estiradas_en_paralelas.gif"
       },
       {
         "name": "L-Sit Hold en Paralelas",
@@ -549,7 +604,8 @@
         "description": "Sube las piernas estiradas a 90° y aguanta el tiempo que marque tu rutina",
         "youtube_url": "https://www.youtube.com/watch?v=1r1ES5pA6ak",
         "difficulty_level": 4,
-        "category": "calisthenics"
+        "category": "calisthenics",
+        "gif": "img/exercises/l_sit_hold_en_paralelas.gif"
       },
       {
         "name": "L-Sit a Knee Raise Dinámico",
@@ -559,7 +615,8 @@
         "description": "Aguanta en L y, cuando no puedas más, pasa a flexiones de rodilla para agotar el core",
         "youtube_url": "https://www.youtube.com/watch?v=1r1ES5pA6ak",
         "difficulty_level": 4,
-        "category": "calisthenics"
+        "category": "calisthenics",
+        "gif": "img/exercises/l_sit_a_knee_raise_dinamico.gif"
       }
     ],
     "cardio": [
@@ -570,7 +627,8 @@
         "reps": "20km",
         "description": "Pedalea a ritmo moderado manteniendo buena postura",
         "youtube_url": "https://www.youtube.com/shorts/w0mjPpxB9CE",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/bicicleta_estatica.gif"
       }
     ],
     "calentamiento": [
@@ -581,7 +639,8 @@
         "reps": "10-15 cada dirección",
         "description": "Círculos amplios con los hombros hacia adelante y luego hacia atrás",
         "youtube_url": "https://www.youtube.com/watch?v=UJnN2qRbgUs",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/rotaciones_de_hombros.gif"
       },
       {
         "name": "Encogimientos Escapulares en Inversión",
@@ -590,7 +649,8 @@
         "reps": "10-15",
         "description": "Colgado boca arriba en paralelas con brazos estirados. Junta y separa escápulas sin flexionar codos. Ideal calentamiento antes de remos o fondos",
         "youtube_url": "https://www.youtube.com/watch?v=xQNrFHEMHA0",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/encogimientos_escapulares_en_inversion.gif"
       },
       {
         "name": "Círculos de Caderas",
@@ -599,7 +659,8 @@
         "reps": "10-15 cada dirección",
         "description": "Manos en la cadera, realiza círculos amplios con las caderas",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/circulos_de_caderas.gif"
       },
       {
         "name": "Rotaciones de Cuello",
@@ -608,7 +669,8 @@
         "reps": "8-10 cada dirección",
         "description": "Lentamente rota la cabeza en círculos, con movimientos suaves",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/rotaciones_de_cuello.gif"
       },
       {
         "name": "Rotaciones de Brazos",
@@ -617,7 +679,8 @@
         "reps": "10-15 cada dirección",
         "description": "Extiende los brazos y realiza círculos amplios hacia adelante y atrás",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/rotaciones_de_brazos.gif"
       },
       {
         "name": "Balanceo de Piernas",
@@ -626,7 +689,8 @@
         "reps": "10-12 por pierna",
         "description": "Balancea una pierna de adelante hacia atrás manteniendo el equilibrio",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/balanceo_de_piernas.gif"
       },
       {
         "name": "Elevaciones de Rodillas",
@@ -635,7 +699,8 @@
         "reps": "15-20",
         "description": "Marcha en el sitio elevando las rodillas hasta la cadera",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/elevaciones_de_rodillas.gif"
       },
       {
         "name": "Jumping Jacks Suaves",
@@ -644,7 +709,8 @@
         "reps": "15-20",
         "description": "Saltos suaves abriendo y cerrando piernas y brazos",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/jumping_jacks_suaves.gif"
       }
     ],
     "estiramiento": [
@@ -655,7 +721,8 @@
         "reps": "30 segundos cada lado",
         "description": "Brazo en pared o marco, gira el cuerpo alejándote para estirar el pecho",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/estiramiento_de_pectorales.gif"
       },
       {
         "name": "Estiramiento de Dorsales",
@@ -664,7 +731,8 @@
         "reps": "30 segundos cada lado",
         "description": "Agarra una barra o superficie elevada, inclínate hacia atrás estirando la espalda",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/estiramiento_de_dorsales.gif"
       },
       {
         "name": "Estiramiento de Hombros",
@@ -673,7 +741,8 @@
         "reps": "30 segundos cada brazo",
         "description": "Lleva un brazo cruzado al pecho y presiona con el otro brazo",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/estiramiento_de_hombros.gif"
       },
       {
         "name": "Estiramiento de Tríceps",
@@ -682,7 +751,8 @@
         "reps": "30 segundos cada brazo",
         "description": "Lleva el codo detrás de la cabeza, presiona suavemente con la otra mano",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/estiramiento_de_triceps.gif"
       },
       {
         "name": "Estiramiento de Isquiotibiales",
@@ -691,7 +761,8 @@
         "reps": "30 segundos cada pierna",
         "description": "Extiende una pierna, inclínate hacia adelante desde la cadera",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/estiramiento_de_isquiotibiales.gif"
       },
       {
         "name": "Estiramiento de Cuádriceps",
@@ -700,7 +771,8 @@
         "reps": "30 segundos cada pierna",
         "description": "De pie, agarra el pie por detrás y llévalo hacia el glúteo",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/estiramiento_de_cuadriceps.gif"
       },
       {
         "name": "Estiramiento de Gemelos",
@@ -709,7 +781,8 @@
         "reps": "30 segundos cada pierna",
         "description": "Pierna extendida atrás, talón en el suelo, inclínate hacia adelante",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/estiramiento_de_gemelos.gif"
       },
       {
         "name": "Estiramiento de Glúteos",
@@ -718,7 +791,8 @@
         "reps": "30 segundos cada lado",
         "description": "Sentado, cruza un pie sobre la rodilla opuesta, inclínate hacia adelante",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/estiramiento_de_gluteos.gif"
       },
       {
         "name": "Estiramiento de Cadera",
@@ -727,7 +801,8 @@
         "reps": "30 segundos cada lado",
         "description": "Zancada profunda, baja la cadera manteniendo el pecho erguido",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/estiramiento_de_cadera.gif"
       },
       {
         "name": "Estiramiento de Espalda Baja",
@@ -736,7 +811,8 @@
         "reps": "30 segundos",
         "description": "Acostado, lleva rodillas al pecho y abraza, mece suavemente",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/estiramiento_de_espalda_baja.gif"
       }
     ],
     "movilidad": [
@@ -747,7 +823,8 @@
         "reps": "10-15",
         "description": "En cuatro patas, alterna entre arquear y redondear la espalda",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/gato_camello.gif"
       },
       {
         "name": "Bird Dog",
@@ -756,7 +833,8 @@
         "reps": "8-10 cada lado",
         "description": "En cuatro patas, extiende brazo y pierna opuestos manteniendo estabilidad",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 2
+        "difficulty_level": 2,
+        "gif": "img/exercises/bird_dog.gif"
       },
       {
         "name": "90/90 Hip Switch",
@@ -765,7 +843,8 @@
         "reps": "8-10 cada lado",
         "description": "Sentado con piernas en 90 grados, rota de un lado al otro",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 2
+        "difficulty_level": 2,
+        "gif": "img/exercises/90_90_hip_switch.gif"
       },
       {
         "name": "Rotaciones Torácicas",
@@ -774,7 +853,8 @@
         "reps": "8-10 cada lado",
         "description": "En cuatro patas, coloca una mano detrás de la cabeza y rota el torso",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 2
+        "difficulty_level": 2,
+        "gif": "img/exercises/rotaciones_toracicas.gif"
       },
       {
         "name": "Dislocaciones de Hombro",
@@ -783,7 +863,8 @@
         "reps": "10-12",
         "description": "Con palo o mancuerna ligera, pasa los brazos de frente a espalda con agarre amplio",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 2
+        "difficulty_level": 2,
+        "gif": "img/exercises/dislocaciones_de_hombro.gif"
       },
       {
         "name": "Círculos de Tobillo",
@@ -792,7 +873,8 @@
         "reps": "10 cada dirección por pie",
         "description": "Sentado o de pie, dibuja círculos con el pie",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 1
+        "difficulty_level": 1,
+        "gif": "img/exercises/circulos_de_tobillo.gif"
       },
       {
         "name": "Sentadilla Profunda",
@@ -801,7 +883,8 @@
         "reps": "30-60 segundos",
         "description": "Mantén una sentadilla profunda, mejora movilidad de tobillos y caderas",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 2
+        "difficulty_level": 2,
+        "gif": "img/exercises/sentadilla_profunda.gif"
       },
       {
         "name": "World's Greatest Stretch",
@@ -810,7 +893,8 @@
         "reps": "5-8 cada lado",
         "description": "Zancada profunda con rotación torácica y estiramiento de cadera",
         "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "difficulty_level": 2
+        "difficulty_level": 2,
+        "gif": "img/exercises/world_s_greatest_stretch.gif"
       }
     ]
   },
@@ -918,7 +1002,7 @@
       "domingo": []
     }
   },
-  "version": "1.4.0",
+  "version": "1.4.1",
   "current_week": 1,
   "total_weeks": 20
 }
