@@ -60,15 +60,13 @@ class ExerciseLibraryModule(BaseTrainer):
                 st.write(f"• Nivel: {level_emoji.get(difficulty, '🟢')} {level_name.get(difficulty, 'Principiante')}")
             
             with col2:
-                if category == 'calentamiento':
-                    self.render_youtube_url_editor(
-                        exercise,
-                        category,
-                        'library',
-                        show_video=True,
-                    )
-                else:
-                    self.render_exercise_media(exercise, show_video=True, show_gif=True)
+                # Edición de URL solo aquí (no en el Plan de entrenamiento)
+                self.render_youtube_url_editor(
+                    exercise,
+                    category,
+                    'library',
+                    show_video=True,
+                )
     
     def render_category_section(self, category_name: str, category_label: str, exercises: List[Dict], filters: Dict):
         """Renderizar sección de categoría de ejercicios"""

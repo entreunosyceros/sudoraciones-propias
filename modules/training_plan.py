@@ -16,7 +16,8 @@ class TrainingPlanModule(BaseTrainer):
         if self.is_future_date(date_str):
             return self.get_pending_day_stats(is_future=True)
         if self.is_before_program_start(date_str):
-            return self.get_pending_day_stats()
+            if date_str not in self.progress_data.get('completed_exercises', {}):
+                return self.get_pending_day_stats()
 
         # Obtener plan del día
         week_info = self.get_week_info(week_number)
@@ -168,10 +169,10 @@ class TrainingPlanModule(BaseTrainer):
             week_for_date = self.get_week_number_for_date(date_str)
             day_stats = self.get_day_completion_stats(date_str, week_for_date)
             
-            # Considerar completado si:
-            # 1. Es día de descanso (is_rest_day = True), O
-            # 2. >= 80% de ejercicios están hechos
-            if day_stats.get('is_rest_day', False) or day_stats['percentage'] >= 80:
+            # Solo días de ENTRENAMIENTO con ≥80% (los descansos no cuentan)
+            if day_stats.get('is_rest_day', False):
+                continue
+            if day_stats.get('total', 0) > 0 and day_stats.get('percentage', 0) >= 80:
                 if month_key not in self.progress_data['completed_workouts']:
                     self.progress_data['completed_workouts'][month_key] = []
                 if date_str not in self.progress_data['completed_workouts'][month_key]:
@@ -752,13 +753,7 @@ class TrainingPlanModule(BaseTrainer):
             label = f"🔥 {exercise['name']} — {exercise.get('reps', '')}"
             with st.expander(label, expanded=compact):
                 st.write(exercise.get('description', ''))
-                self.render_youtube_url_editor(
-                    exercise,
-                    'calentamiento',
-                    day_key,
-                    week_number,
-                    show_video=show_videos,
-                )
+                self.render_exercise_media(exercise, show_video=show_videos, show_gif=True)
                 if show_instructions:
                     st.markdown("**🎯 Instrucciones:**")
                     st.write(self.get_detailed_instructions(exercise['name'], 'calentamiento', exercise))
@@ -817,13 +812,7 @@ class TrainingPlanModule(BaseTrainer):
             st.markdown(f"**Series:** {display_sets} | **Reps:** {display_reps} | **Grupo:** {muscle_group.title()}")
         
         with st.expander(f"ℹ️ Ver detalles de {exercise_name}", expanded=False):
-            self.render_youtube_url_editor(
-                exercise,
-                muscle_group,
-                day_key,
-                st.session_state.current_week,
-                show_video=show_videos,
-            )
+            self.render_exercise_media(exercise, show_video=show_videos, show_gif=True)
 
             # Información del ejercicio
             col1, col2 = st.columns([1, 1])

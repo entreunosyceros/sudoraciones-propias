@@ -48,18 +48,34 @@ class ProgressModule(BaseTrainer):
         return self.MONTH_ABBR_ES.get(month, f'M{month}')
 
     def get_month_stats(self, year: int, month: int) -> Dict[str, Any]:
-        """Obtener estadísticas del mes"""
-        month_key = f"{year:04d}-{month:02d}"
-        completed_days = self.progress_data.get('completed_workouts', {}).get(month_key, [])
-        
-        # Obtener días del mes
-        days_in_month = calendar.monthrange(year, month)[1]
-        
+        """Estadísticas del mes: solo días de entrenamiento planificados (≥80% = completado).
+
+        Alineado con Estadísticas (no cuenta descansos ni diluye el % con todos los días del mes).
+        """
+        _, last_day = calendar.monthrange(year, month)
+        training_days = 0
+        completed_training = 0
+        completed_dates: list[str] = []
+
+        for day in range(1, last_day + 1):
+            date_str = f"{year:04d}-{month:02d}-{day:02d}"
+            if self.is_future_date(date_str):
+                continue
+            day_stats = self.get_day_completion_stats_accumulated(date_str)
+            if day_stats.get('is_rest_day'):
+                continue
+            if day_stats.get('total', 0) <= 0:
+                continue
+            training_days += 1
+            if day_stats.get('percentage', 0) >= 80:
+                completed_training += 1
+                completed_dates.append(date_str)
+
         return {
-            'completed': len(completed_days),
-            'total_days': days_in_month,
-            'completion_rate': (len(completed_days) / days_in_month) * 100 if days_in_month > 0 else 0,
-            'completed_dates': completed_days
+            'completed': completed_training,
+            'total_days': training_days,
+            'completion_rate': (completed_training / training_days * 100) if training_days > 0 else 0,
+            'completed_dates': completed_dates,
         }
 
     def get_month_stats_filtered(self, year: int, month: int, filter_week: int) -> Dict[str, Any]:
@@ -121,8 +137,11 @@ class ProgressModule(BaseTrainer):
         """
         if self.is_future_date(date_str):
             return self.get_pending_day_stats(is_future=True)
+        # Si hay ejercicios marcados ese día, mostrarlos aunque la fecha quede
+        # «antes» del inicio del calendario (evita perder historial al reajustar fechas).
         if self.is_before_program_start(date_str):
-            return self.get_pending_day_stats()
+            if date_str not in self.progress_data.get('completed_exercises', {}):
+                return self.get_pending_day_stats()
 
         week_num = self.get_training_week_for_date(date_str)
         return self._get_training_plan_module().get_day_completion_stats(date_str, week_num)
@@ -390,25 +409,19 @@ class ProgressModule(BaseTrainer):
         Lógica:
         - Se recorre hacia atrás desde hoy.
         - Día de descanso (según plan) NO suma racha pero TAMPOCO la rompe.
-        - Día con entrenamiento planificado y con >=1 ejercicio completado suma racha.
-        - Día con entrenamiento planificado pero 0 ejercicios completados ROMPE la racha.
+        - Día con entrenamiento planificado y ≥80% completado suma racha.
+        - Día con entrenamiento planificado incompleto ROMPE la racha.
         """
         self.reload_progress_data()
         today = datetime.date.today()
         streak = 0
-        # Revisar hasta 60 días hacia atrás para asegurar continuidad en semanas largas
-        # MODELO B: Días de entrenamiento consecutivos (ignorando descansos).
-        # Reglas:
-        # - Días de descanso no suman ni rompen.
-        # - Se cuenta un día solo si tiene ≥1 ejercicio COMPLETADO perteneciente a su semana (sufijo _weekN correcto).
-        # - Primer día planificado sin ejercicios completados corta la racha.
         for i in range(60):
             check_date = today - datetime.timedelta(days=i)
             date_str = check_date.strftime('%Y-%m-%d')
             week_num = self.get_training_week_for_date(date_str)
             day_stats = self._get_training_plan_module().get_day_completion_stats(date_str, week_num)
             if day_stats.get('is_rest_day'):
-                continue  # descanso ignora
+                continue
             total = day_stats.get('total', 0)
             completed = day_stats.get('completed', 0)
             percentage = (completed / total * 100) if total > 0 else 0
@@ -417,16 +430,186 @@ class ProgressModule(BaseTrainer):
                 streak += 1
             else:
                 if i == 0:
-                    # Hoy incompleto: no rompe, solo se ignora
                     continue
                 break
         return streak
+
+    def _count_recent_training_days(self, days: int = 7) -> Dict[str, int]:
+        """Días de entrenamiento planificados / completados (≥80%) en la ventana reciente."""
+        today = datetime.date.today()
+        planned = 0
+        completed = 0
+        partial = 0
+        for i in range(days):
+            check_date = today - datetime.timedelta(days=i)
+            date_str = check_date.strftime('%Y-%m-%d')
+            week_num = self.get_training_week_for_date(date_str)
+            day_stats = self._get_training_plan_module().get_day_completion_stats(date_str, week_num)
+            if day_stats.get('is_rest_day') or day_stats.get('total', 0) <= 0:
+                continue
+            planned += 1
+            pct = day_stats.get('percentage', 0)
+            if pct >= 80:
+                completed += 1
+            elif pct > 0:
+                partial += 1
+        return {'planned': planned, 'completed': completed, 'partial': partial}
+
+    def get_progress_tips(
+        self,
+        *,
+        total_workouts: int,
+        streak: int,
+        month_stats: Dict[str, Any],
+        week_number: int,
+    ) -> list[Dict[str, str]]:
+        """Consejos contextuales según progreso acumulado (máx. 3, distintos)."""
+        tips: list[Dict[str, str]] = []
+        week_info = self.get_week_info(week_number)
+        level = week_info.get('level', 1)
+        rate = float(month_stats.get('completion_rate') or 0)
+        month_done = int(month_stats.get('completed') or 0)
+        month_planned = int(month_stats.get('total_days') or 0)
+        recent = self._count_recent_training_days(7)
+        today_week = self.get_training_week_for_date(datetime.date.today().strftime('%Y-%m-%d'))
+        auto_week = self.get_auto_detected_week()
+
+        # Consistencia del mes
+        if month_planned == 0 and total_workouts == 0:
+            tips.append({
+                'level': 'info',
+                'text': "🏁 Empieza marcando los ejercicios de **hoy** en Plan de Entrenamiento. El calendario se irá coloreando solo.",
+            })
+        elif rate >= 85:
+            tips.append({
+                'level': 'success',
+                'text': f"🎉 Mes excelente: **{month_done}/{month_planned}** días de entrenamiento (≥80%). Mantén el ritmo.",
+            })
+        elif rate >= 60:
+            tips.append({
+                'level': 'info',
+                'text': f"👍 Buen mes (**{rate:.0f}%**). Si cierras **1-2 días** más al ≥80%, subes al siguiente tramo de consistencia.",
+            })
+        elif rate >= 35:
+            tips.append({
+                'level': 'warning',
+                'text': f"📈 Llevas **{month_done}** de **{month_planned}** días del mes. Prioriza terminar la sesión de hoy al completo.",
+            })
+        else:
+            tips.append({
+                'level': 'error',
+                'text': "💪 El mes va flojo. Un día completo (≥80%) ya cambia la tendencia: ve a **Sesión de hoy**.",
+            })
+
+        # Racha
+        if streak >= 10:
+            tips.append({
+                'level': 'success',
+                'text': f"🔥 Racha de **{streak}** días de entrenamiento. No la rompas: hoy cuenta aunque sea una sesión corta pero completa.",
+            })
+        elif streak >= 4:
+            tips.append({
+                'level': 'success',
+                'text': f"🔥 Llevas **{streak}** días seguidos (≥80%). En 3 más tendrás una racha sólida de una semana+.",
+            })
+        elif streak == 0 and total_workouts > 0:
+            tips.append({
+                'level': 'warning',
+                'text': "⏳ Sin racha activa. Completa el próximo día de entrenamiento al ≥80% para reiniciarla.",
+            })
+
+        # Volumen acumulado
+        if total_workouts >= 100:
+            tips.append({
+                'level': 'success',
+                'text': f"🏆 **{total_workouts}** días de entrenamiento acumulados. Nivel de constancia alto: cuida técnica y recuperación.",
+            })
+        elif total_workouts >= 40:
+            tips.append({
+                'level': 'info',
+                'text': f"📊 Llevas **{total_workouts}** días completos. Revisa Estadísticas para ver qué grupos van más rezagados.",
+            })
+        elif 1 <= total_workouts < 10:
+            tips.append({
+                'level': 'info',
+                'text': f"🌱 Primeros **{total_workouts}** días registrados. La clave ahora es la frecuencia, no la intensidad máxima.",
+            })
+
+        # Nivel / semana del programa
+        if week_number in (5, 9, 13, 17):
+            tips.append({
+                'level': 'info',
+                'text': f"🆙 Estás en el arranque del **{week_info.get('level_name', 'nuevo nivel')}**. Revisa series/reps: sube el volumen con calma.",
+            })
+        elif level >= 3 and rate < 50 and total_workouts > 20:
+            tips.append({
+                'level': 'warning',
+                'text': f"⚖️ Nivel **{week_info.get('level_name')}** con poca consistencia este mes. Mejor consolidar semanas que saltar adelante.",
+            })
+
+        if auto_week > today_week + 1:
+            tips.append({
+                'level': 'info',
+                'text': f"🎯 Tu progreso sugiere la **Semana {auto_week}**, pero el calendario marca la **{today_week}**. Usa «Auto-detectada» solo si quieres adelantar la vista.",
+            })
+
+        # Últimos 7 días
+        if recent['partial'] >= 2:
+            tips.append({
+                'level': 'warning',
+                'text': f"🟠 En 7 días tienes **{recent['partial']}** sesiones parciales. Acabar al ≥80% pesa más que empezar muchos días al 40%.",
+            })
+        elif recent['planned'] >= 3 and recent['completed'] == recent['planned']:
+            tips.append({
+                'level': 'success',
+                'text': f"✅ Últimos 7 días: **{recent['completed']}/{recent['planned']}** días de entrenamiento cerrados. Muy buena semana reciente.",
+            })
+        elif recent['planned'] >= 2 and recent['completed'] == 0:
+            tips.append({
+                'level': 'error',
+                'text': "📭 En la última semana no hay ningún día ≥80%. Retoma con la sesión de hoy, aunque sea el mínimo del plan.",
+            })
+
+        # Priorizar diversidad: como máximo 3 tips
+        priority = {'error': 0, 'warning': 1, 'success': 2, 'info': 3}
+        tips.sort(key=lambda t: priority.get(t['level'], 9))
+        seen_levels: set[str] = set()
+        selected: list[Dict[str, str]] = []
+        for tip in tips:
+            # Evitar dos del mismo tono salvo que aún queden huecos
+            if tip['level'] in seen_levels and len(selected) >= 1:
+                continue
+            selected.append(tip)
+            seen_levels.add(tip['level'])
+            if len(selected) >= 3:
+                break
+        if len(selected) < 2:
+            for tip in tips:
+                if tip not in selected:
+                    selected.append(tip)
+                if len(selected) >= 2:
+                    break
+        return selected[:3]
+
+    def _render_progress_tips(self, tips: list[Dict[str, str]]) -> None:
+        """Mostrar consejos de progreso."""
+        st.subheader("💡 Consejos de Progreso")
+        if not tips:
+            st.info("Marca entrenamientos para recibir consejos personalizados.")
+            return
+        render = {
+            'success': st.success,
+            'info': st.info,
+            'warning': st.warning,
+            'error': st.error,
+        }
+        for tip in tips:
+            render.get(tip['level'], st.info)(tip['text'])
 
     def render_progress_tab(self):
         """Renderizar pestaña de progreso con calendario"""
         st.header("📊 Tu Progreso de Entrenamiento")
 
-        # Inicializar estado de navegación del calendario
         current_date = datetime.datetime.now()
 
         if 'calendar_year' not in st.session_state:
@@ -434,7 +617,59 @@ class ProgressModule(BaseTrainer):
         if 'calendar_month' not in st.session_state:
             st.session_state.calendar_month = current_date.month
 
-        # Selector de semana para vista del calendario (apilado arriba)
+        # --- Resumen arriba (métricas + consejos) ---
+        current_week = st.session_state.get('current_week', 1)
+        week_info = self.get_week_info(current_week)
+        st.info(f"📅 **Semana Actual: {current_week}** - {week_info['level_name']} | {week_info['level_description']}")
+
+        self.update_completed_workouts()
+        total_workouts = int(self.progress_data.get('total_workouts', 0) or 0)
+        current_month_stats = self.get_month_stats(current_date.year, current_date.month)
+        selected_month_stats = self.get_month_stats(
+            st.session_state.calendar_year, st.session_state.calendar_month
+        )
+        streak = self.calculate_current_streak()
+
+        st.subheader("📈 Resumen")
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Días entrenamiento", total_workouts)
+        with col2:
+            rate_help = "% de días de entrenamiento del mes (≥80%)"
+            if (
+                st.session_state.calendar_year == current_date.year
+                and st.session_state.calendar_month == current_date.month
+            ):
+                st.metric(
+                    "Este Mes",
+                    current_month_stats['completed'],
+                    f"{current_month_stats['completion_rate']:.1f}%",
+                    help=rate_help,
+                )
+            else:
+                month_name = self.get_month_abbr_es(st.session_state.calendar_month)
+                st.metric(
+                    f"{month_name} {st.session_state.calendar_year}",
+                    selected_month_stats['completed'],
+                    f"{selected_month_stats['completion_rate']:.1f}%",
+                    help=rate_help,
+                )
+        with col3:
+            st.metric("Nivel Actual", week_info['level'], week_info['level_name'])
+        with col4:
+            st.metric("Racha Actual", f"{streak} días", "🔥" if streak > 0 else "")
+
+        tips = self.get_progress_tips(
+            total_workouts=total_workouts,
+            streak=streak,
+            month_stats=current_month_stats,
+            week_number=current_week,
+        )
+        self._render_progress_tips(tips)
+
+        st.markdown("---")
+
+        # --- Calendario ---
         st.markdown("### 👁️ Vista del Calendario")
         view_options = ["Todas las Semanas (Acumulativo)"] + [f"Semana {i}" for i in range(1, 21)]
         selected_view = st.selectbox(
@@ -445,30 +680,37 @@ class ProgressModule(BaseTrainer):
         )
         if selected_view == "Todas las Semanas (Acumulativo)":
             view_week = None
-            # Calendario inmediatamente tras selector
             self.render_calendar(st.session_state.calendar_year, st.session_state.calendar_month, view_week)
             st.caption("*Vista acumulativa: muestra progreso de todas las semanas entrenadas*")
         else:
             view_week = int(selected_view.split()[-1])
-            # Calendario semanal inmediatamente tras selector
             self.render_week_calendar(view_week)
             week_view_info = self.get_week_info(view_week)
-            st.caption(f"*Vista específica: Semana {view_week} · {week_view_info['level_name']} ({week_view_info['level_description']})*")
+            st.caption(
+                f"*Vista específica: Semana {view_week} · "
+                f"{week_view_info['level_name']} ({week_view_info['level_description']})*"
+            )
         if view_week is None:
-            # Controles mensuales debajo del calendario (solo acumulativo)
             with st.expander("⚙️ Ajustes de Mes", expanded=False):
                 col1, col2, col3 = st.columns([1, 1, 2])
                 with col1:
                     year_options = list(range(current_date.year - 1, current_date.year + 2))
-                    year_index = year_options.index(st.session_state.calendar_year) if st.session_state.calendar_year in year_options else 1
-                    selected_year = st.selectbox("Año:", options=year_options, index=year_index, key="year_selector")
+                    year_index = (
+                        year_options.index(st.session_state.calendar_year)
+                        if st.session_state.calendar_year in year_options
+                        else 1
+                    )
+                    selected_year = st.selectbox(
+                        "Año:", options=year_options, index=year_index, key="year_selector"
+                    )
                     st.session_state.calendar_year = selected_year
                 with col2:
                     month_names = [self.get_month_name_es(i) for i in range(1, 13)]
                     month_index = st.session_state.calendar_month - 1
-                    selected_month_name = st.selectbox("Mes:", options=month_names, index=month_index, key="month_selector")
-                    selected_month = month_names.index(selected_month_name) + 1
-                    st.session_state.calendar_month = selected_month
+                    selected_month_name = st.selectbox(
+                        "Mes:", options=month_names, index=month_index, key="month_selector"
+                    )
+                    st.session_state.calendar_month = month_names.index(selected_month_name) + 1
                 with col3:
                     col_prev, col_today, col_next = st.columns(3)
                     with col_prev:
@@ -481,8 +723,11 @@ class ProgressModule(BaseTrainer):
                             st.rerun()
                     with col_today:
                         now = datetime.datetime.now()
-                        month_abbrs = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"]
-                        label = f"📅 {now.day} {month_abbrs[now.month-1]}"
+                        month_abbrs = [
+                            "ENE", "FEB", "MAR", "ABR", "MAY", "JUN",
+                            "JUL", "AGO", "SEP", "OCT", "NOV", "DIC",
+                        ]
+                        label = f"📅 {now.day} {month_abbrs[now.month - 1]}"
                         if st.button(label, key="calendar_today_btn", help="Ir al mes actual"):
                             st.session_state.calendar_year = now.year
                             st.session_state.calendar_month = now.month
@@ -495,48 +740,13 @@ class ProgressModule(BaseTrainer):
                             else:
                                 st.session_state.calendar_month += 1
                             st.rerun()
-        # Información de semana actual
-        current_week = st.session_state.get('current_week', 1)
-        week_info = self.get_week_info(current_week)
-        st.info(f"📅 **Semana Actual: {current_week}** - {week_info['level_name']} | {week_info['level_description']}")
-        st.markdown("---")
 
-        # Estadísticas generales
-        st.subheader("📈 Estadísticas Generales")
-        total_completed = 0
-        months_data = []
-        for i in range(6):
-            date = current_date - datetime.timedelta(days=30 * i)
-            stats = self.get_month_stats(date.year, date.month)
-            total_completed += stats['completed']
-            months_data.append({'Mes': f"{calendar.month_abbr[date.month]} {date.year}", 'Entrenamientos': stats['completed'], 'Tasa': stats['completion_rate']})
-        months_data.reverse()
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Entrenamientos Totales", self.progress_data.get('total_workouts', 0))
-        with col2:
-            selected_month_stats = self.get_month_stats(st.session_state.calendar_year, st.session_state.calendar_month)
-            current_month_stats = self.get_month_stats(current_date.year, current_date.month)
-            if st.session_state.calendar_year == current_date.year and st.session_state.calendar_month == current_date.month:
-                st.metric("Este Mes", current_month_stats['completed'], f"{current_month_stats['completion_rate']:.1f}%")
-            else:
-                month_name = self.get_month_abbr_es(st.session_state.calendar_month)
-                st.metric(f"{month_name} {st.session_state.calendar_year}", selected_month_stats['completed'], f"{selected_month_stats['completion_rate']:.1f}%")
-        with col3:
-            wk_info = self.get_week_info(st.session_state.current_week)
-            st.metric("Nivel Actual", wk_info['level'], wk_info['level_name'])
-        with col4:
-            streak = self.calculate_current_streak()
-            st.metric("Racha Actual", f"{streak} días", "🔥" if streak > 0 else "")
-        st.subheader("💡 Consejos de Progreso")
-        current_month_stats = self.get_month_stats(current_date.year, current_date.month)
-            
-        if current_month_stats['completion_rate'] >= 80:
-            st.success("🎉 ¡Excelente! Mantienes una rutina muy consistente.")
-        elif current_month_stats['completion_rate'] >= 60:
-            st.info("👍 Buen progreso. Intenta ser más consistente para mejores resultados.")
-        elif current_month_stats['completion_rate'] >= 40:
-            st.warning("📈 Puedes mejorar. Intenta entrenar al menos 4 días por semana.")
-        else:
-            st.error("💪 ¡Es hora de retomar el ritmo! Cada entrenamiento cuenta.")
-        st.info("""**Cómo interpretar el calendario:**\n- 🟢 Verde (100%): Entrenamiento completado\n- 🟡 Amarillo (80-99%): Casi completado\n- 🟠 Naranja (1-79%): Parcialmente completado\n- ⚪ Gris (0%): Sin entrenamientos\n- 🔵 Borde azul: Día actual\n- **Los porcentajes se calculan automáticamente** desde el Plan de Entrenamiento""")
+        with st.expander("📖 Cómo interpretar el calendario", expanded=False):
+            st.markdown(
+                "- 🟢 Verde (100%): Entrenamiento completado\n"
+                "- 🟡 Amarillo (80-99%): Casi completado\n"
+                "- 🟠 Naranja (1-79%): Parcialmente completado\n"
+                "- ⚪ Gris (0%): Sin entrenamientos\n"
+                "- 🔵 Borde azul: Día actual\n"
+                "- Los porcentajes se calculan desde el Plan de Entrenamiento"
+            )

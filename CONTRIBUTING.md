@@ -37,7 +37,7 @@ Si pruebas el empaquetado Debian:
 
 ```bash
 bash packaging/build_deb.sh
-sudo dpkg -i sudoraciones_1.4.1_amd64.deb
+sudo dpkg -i sudoraciones_1.4.2_amd64.deb
 sudoraciones start
 ```
 

@@ -1,6 +1,6 @@
 # Sudoraciones Propias
 
-[![Versión](https://img.shields.io/badge/versión-1.4.1-2ea44f)](https://github.com/entreunosyceros/sudoraciones-propias/releases)
+[![Versión](https://img.shields.io/badge/versión-1.4.2-2ea44f)](https://github.com/entreunosyceros/sudoraciones-propias/releases)
 [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.28%2B-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![Licencia](https://img.shields.io/badge/licencia-GPL--3.0-blue.svg)](LICENSE)
@@ -49,8 +49,8 @@ Abre `http://localhost:8508` (el launcher intenta abrir el navegador solo).
 ### Paquete `.deb`
 
 ```bash
-wget https://github.com/entreunosyceros/sudoraciones-propias/releases/download/v1.4.1/sudoraciones_1.4.1_amd64.deb
-sudo dpkg -i sudoraciones_1.4.1_amd64.deb
+wget https://github.com/entreunosyceros/sudoraciones-propias/releases/download/v1.4.2/sudoraciones_1.4.2_amd64.deb
+sudo dpkg -i sudoraciones_1.4.2_amd64.deb
 ```
 
 Más detalle en [Instalación](docs/instalacion.md).

@@ -101,11 +101,13 @@ PROGRESS_FILE = data_path('progress_data.json')
 PROGRESS_BACKUP_FILE = data_path('progress_data_backup.json')
 USER_SETTINGS_FILE = data_path('user_settings.json')
 NUTRITION_FILE = data_path('nutrition_data.json')
+MEDIA_OVERRIDES_FILE = data_path('media_overrides.json')
 
 for _name in (
     'progress_data.json',
     'progress_data_backup.json',
     'user_settings.json',
     'nutrition_data.json',
+    'media_overrides.json',
 ):
     _migrate_legacy_data_file(_name)

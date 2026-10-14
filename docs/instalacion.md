@@ -6,8 +6,8 @@
 ## Instalación (.deb)
 
 ```bash
-wget https://github.com/sapoclay/sudoraciones-propias/releases/download/v1.4.1/sudoraciones_1.4.1_amd64.deb
-sudo dpkg -i sudoraciones_1.4.1_amd64.deb
+wget https://github.com/sapoclay/sudoraciones-propias/releases/download/v1.4.2/sudoraciones_1.4.2_amd64.deb
+sudo dpkg -i sudoraciones_1.4.2_amd64.deb
 sudo apt-get install -f
 ```
 

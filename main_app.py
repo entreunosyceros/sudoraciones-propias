@@ -306,17 +306,24 @@ class ModernHeavyDutyTrainer:
                 st.caption("**Fecha inicio programa:** No configurada")
             
             # Permitir cambiar la fecha de inicio
-            if st.button("🔧 Cambiar Fecha de Inicio", help="Recalcula el mapeo entre semanas de entrenamiento y calendario"):
+            if st.button(
+                "🔧 Cambiar Fecha de Inicio",
+                help="Solo recalcula el mapeo calendario. No borra ejercicios completados.",
+            ):
                 st.session_state.show_date_config = True
             
             if st.session_state.get('show_date_config', False):
                 current_display = self.base_trainer.get_program_start_date_display()
+                st.warning(
+                    "Esto solo mueve el calendario. Tu historial de ejercicios **no se borra**. "
+                    "Para borrar todo usa **Reiniciar Todo el Progreso**."
+                )
                 
                 date_text = st.text_input(
                     "Fecha de inicio del programa (DD/MM/YYYY):",
                     value=current_display if current_display else "",
                     placeholder="ej: 01/08/2025",
-                    help="Esta será la fecha exacta de inicio del programa (no se ajustará al lunes)"
+                    help="Fecha exacta de inicio del programa (no se ajustará al lunes)"
                 )
                 
                 col_save, col_cancel = st.columns(2)
@@ -471,7 +478,7 @@ class ModernHeavyDutyTrainer:
             # Pie de página
             st.markdown("---")
             st.markdown(
-                "💪 **Sudoraciones Propias v1.4.1** - Sistema de Entrenamiento con Mapeo Calendario  \n"
+                "💪 **Sudoraciones Propias v1.4.2** - Sistema de Entrenamiento con Mapeo Calendario  \n"
                 "🚀 Desarrollado con ☕ Python & Streamlit  \n"
                 "📅 **Nuevo**: Semanas de entrenamiento sincronizadas con fechas reales  \n"
                 "**Creado por entreunosyceros**",

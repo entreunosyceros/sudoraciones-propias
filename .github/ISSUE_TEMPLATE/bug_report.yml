@@ -28,7 +28,7 @@ body:
     attributes:
       label: Versión
       description: Versión de la app o commit si ejecutas desde código fuente
-      placeholder: "1.4.1"
+      placeholder: "1.4.2"
     validations:
       required: true
 

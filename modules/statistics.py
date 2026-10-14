@@ -20,28 +20,13 @@ class StatisticsModule(BaseTrainer):
         return self.MUSCLE_GROUP_LABELS_ES.get(key, group_name.title())
     
     def filter_dates_from_program_start(self, completed_exercises):
-        """Filtrar ejercicios solo desde la fecha de inicio del programa"""
-        if not self.progress_data.get('program_start_date') or self.progress_data['program_start_date'] is None:
-            return completed_exercises
-        
-        try:
-            start_date = datetime.datetime.strptime(self.progress_data['program_start_date'], '%Y-%m-%d')
-            filtered_exercises = {}
-            
-            for date_str, exercises in completed_exercises.items():
-                try:
-                    exercise_date = datetime.datetime.strptime(date_str, '%Y-%m-%d')
-                    # Solo incluir ejercicios desde la fecha de inicio del programa
-                    if exercise_date >= start_date:
-                        filtered_exercises[date_str] = exercises
-                except ValueError:
-                    # Si hay error al parsear fecha, incluir por compatibilidad
-                    filtered_exercises[date_str] = exercises
-            
-            return filtered_exercises
-        except ValueError:
-            # Si hay error al parsear fecha de inicio, devolver todos
-            return completed_exercises
+        """Devolver el historial completo de ejercicios (no ocultar por fecha de inicio).
+
+        Antes se filtraba por program_start_date y al reajustar el calendario
+        parecía que se había perdido el progreso. El borrado real solo ocurre
+        con «Reiniciar Todo el Progreso».
+        """
+        return completed_exercises or {}
     
     def _calculate_total_workouts_from_start(self) -> int:
         """Calcular total REAL de días de ENTRENAMIENTO completados (≥80%) ignorando días de descanso.
@@ -52,21 +37,13 @@ class StatisticsModule(BaseTrainer):
         if 'completed_exercises' not in self.progress_data:
             return 0
 
-        start_date = None
-        if self.progress_data.get('program_start_date'):
-            try:
-                start_date = datetime.datetime.strptime(self.progress_data['program_start_date'], '%Y-%m-%d').date()
-            except ValueError:
-                start_date = None
-
         total_training_days = 0
         for date_str in self.progress_data['completed_exercises'].keys():
             try:
-                d = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+                datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
             except ValueError:
                 continue
-            if start_date and d < start_date:
-                continue
+            # Contar todos los días con progreso (no ocultar por program_start_date)
             stats = self._get_training_day_stats(date_str)
             if stats['is_rest_day']:
                 continue
@@ -102,20 +79,12 @@ class StatisticsModule(BaseTrainer):
         """Calcular la racha más larga solo contando días de entrenamiento completos (≥80%), descansos ignorados."""
         if 'completed_exercises' not in self.progress_data:
             return 0
-        # Reunir todas las fechas relevantes desde inicio
+        # Reunir todas las fechas con progreso (historial completo)
         dates = []
-        start_date = None
-        if self.progress_data.get('program_start_date'):
-            try:
-                start_date = datetime.datetime.strptime(self.progress_data['program_start_date'], '%Y-%m-%d').date()
-            except ValueError:
-                start_date = None
         for date_str in self.progress_data['completed_exercises'].keys():
             try:
                 d = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
             except ValueError:
-                continue
-            if start_date and d < start_date:
                 continue
             dates.append(d)
         if not dates:
@@ -175,8 +144,12 @@ class StatisticsModule(BaseTrainer):
         total_exercises = 0
         for date_str, exercises in filtered_exercises.items():
             for exercise_id, completed in exercises.items():
-                if completed:
-                    total_exercises += 1
+                if not completed:
+                    continue
+                muscle_group = exercise_id.split('_', 1)[0] if '_' in exercise_id else ''
+                if not self.is_training_muscle_group(muscle_group):
+                    continue
+                total_exercises += 1
         
         return total_exercises
     
@@ -282,12 +255,14 @@ class StatisticsModule(BaseTrainer):
 
         st.markdown("---")
         
-        # Análisis de completado vs disponible por grupo
+        # Análisis de completado vs disponible por grupo (sin calentamiento/estiramiento/movilidad)
         exercise_counts = {}
         completed_counts = {}
         
-        # Contar ejercicios disponibles por grupo
+        # Contar ejercicios disponibles por grupo de entrenamiento
         for muscle_group, exercises in self.config.get('exercises', {}).items():
+            if not self.is_training_muscle_group(muscle_group):
+                continue
             exercise_counts[muscle_group] = len(exercises)
             completed_counts[muscle_group] = 0
         
@@ -425,6 +400,8 @@ class StatisticsModule(BaseTrainer):
                         parts = exercise_id.split('_')
                         if len(parts) >= 2:
                             muscle_group = parts[0]
+                            if not self.is_training_muscle_group(muscle_group):
+                                continue
                             if muscle_group not in muscle_group_detailed:
                                 muscle_group_detailed[muscle_group] = {
                                     'total_completados': 0,
@@ -492,6 +469,8 @@ class StatisticsModule(BaseTrainer):
         
         all_exercises = []
         for muscle_group, exercises in self.config.get('exercises', {}).items():
+            if not self.is_training_muscle_group(muscle_group):
+                continue
             for exercise in exercises:
                 # Usar la nueva función mejorada para contar completados
                 completed_count = self.get_exercise_completion_count(muscle_group, exercise['name'])
@@ -577,10 +556,16 @@ class StatisticsModule(BaseTrainer):
                 if monthly_avg < 8:
                     recommendations.append(f"📈 **Consistencia**: Promedio de {monthly_avg:.1f} entrenamientos/mes. Meta recomendada: 12+ entrenamientos/mes.")
         
-        # Análisis de videos
-        total_exercises = sum(len(exercises) for exercises in self.config.get('exercises', {}).values())
-        exercises_with_video = sum(1 for muscle_group, exercises in self.config.get('exercises', {}).items() 
-                                 for exercise in exercises if exercise.get('youtube_url'))
+        # Análisis de videos (solo grupos de entrenamiento)
+        training_exercises = {
+            g: exs for g, exs in self.config.get('exercises', {}).items()
+            if self.is_training_muscle_group(g)
+        }
+        total_exercises = sum(len(exercises) for exercises in training_exercises.values())
+        exercises_with_video = sum(
+            1 for exercises in training_exercises.values()
+            for exercise in exercises if exercise.get('youtube_url')
+        )
         
         if exercises_with_video < total_exercises * 0.8:
             recommendations.append(f"🎥 **Videos**: Solo {exercises_with_video}/{total_exercises} ejercicios tienen video. Agregar más videos mejorará la técnica.")
@@ -595,10 +580,10 @@ class StatisticsModule(BaseTrainer):
         with st.expander("🔧 Información Técnica"):
             st.markdown("### Datos del Sistema")
             st.json({
-                "Total ejercicios configurados": sum(len(exercises) for exercises in self.config.get('exercises', {}).values()),
-                "Grupos musculares": len(self.config.get('exercises', {})),
+                "Total ejercicios (entrenamiento)": total_exercises,
+                "Grupos musculares (entrenamiento)": len(training_exercises),
                 "Semanas de progreso disponibles": 20,
                 "Ejercicios con video": exercises_with_video,
                 "Datos de progreso guardados": len(self.progress_data.get('completed_exercises', {})),
-                "Entrenamientos totales": self.progress_data.get('total_workouts', 0)
+                "Días entrenamiento (≥80%)": self.progress_data.get('total_workouts', 0)
             })

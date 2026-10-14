@@ -10,5 +10,6 @@ progress_data_backup.json
 progress_data_backup_*.json
 nutrition_data.json
 user_settings.json
+media_overrides.json
 *.log
 *.deb

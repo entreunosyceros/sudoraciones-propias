@@ -13,6 +13,7 @@ import streamlit as st
 
 from .paths import (
     CONFIG_FILE,
+    MEDIA_OVERRIDES_FILE,
     NUTRITION_FILE,
     PROGRESS_BACKUP_FILE,
     PROGRESS_FILE,
@@ -21,7 +22,6 @@ from .paths import (
     ensure_data_dir,
     resolve_exercise_gif,
 )
-
 
 class BaseTrainer:
     """Clase base con funcionalidad core del sistema"""
@@ -87,6 +87,13 @@ class BaseTrainer:
         'abs': 'Abdominales',
         'cardio': 'Cardio',
     }
+
+    # Calentamiento / movilidad / estiramiento: biblioteca auxiliar, no cuentan en estadísticas de entrenamiento
+    NON_TRAINING_GROUPS = frozenset({'calentamiento', 'estiramiento', 'movilidad'})
+
+    def is_training_muscle_group(self, muscle_group: str) -> bool:
+        """True si el grupo forma parte del entrenamiento (no auxiliar)."""
+        return (muscle_group or '').lower() not in self.NON_TRAINING_GROUPS
 
     LEVEL_TRANSITION_INFO = {
         2: {
@@ -192,15 +199,13 @@ class BaseTrainer:
         return program_week
 
     def set_current_program_week(self, week_number: int) -> bool:
-        """Hacer que 'hoy' sea el inicio de la semana indicada (recalcula fecha de inicio)."""
+        """Ir a una semana del programa SOLO en el selector (no borra progreso ni cambia la fecha de inicio).
+
+        Antes recalculaba program_start_date, lo que ocultaba el historial en estadísticas/calendario.
+        El reinicio total solo debe hacerse con el botón «Reiniciar Todo el Progreso».
+        """
         max_weeks = int(self.config.get('total_weeks', 20))
         week_number = min(max(int(week_number), 1), max_weeks)
-        today = datetime.date.today()
-        # Hoy cae en el día 0 de esa semana del programa
-        start_date = today - datetime.timedelta(weeks=week_number - 1)
-        self.progress_data['program_start_date'] = start_date.strftime('%Y-%m-%d')
-        self.update_calendar_mapping()
-        self.save_progress_data()
         st.session_state.current_week = week_number
         return True
 
@@ -680,39 +685,65 @@ class BaseTrainer:
                 f"Hoy en el calendario es Semana **{ctx['today_week']}**."
             )
             if st.button(
-                f"✅ Continuar desde Semana {ctx['selector_week']}",
+                f"📆 Ir a Semana de hoy ({ctx['today_week']})",
                 use_container_width=True,
                 key="adopt_selector_week",
-                help="Ajusta la fecha de inicio para que hoy sea esa semana del programa",
+                help=(
+                    f"Mueve el selector a la Semana {ctx['today_week']} del calendario. "
+                    "No borra progreso ni cambia la fecha de inicio."
+                ),
             ):
-                self.set_current_program_week(ctx['selector_week'])
+                self.set_current_program_week(ctx['today_week'])
                 st.rerun()
 
         jump_week = st.number_input(
-            "Retomar en la semana:",
+            "Ir a la semana:",
             min_value=1,
             max_value=max_weeks,
             value=min(max(ctx['today_week'], 1), max_weeks),
             step=1,
             key="jump_program_week",
-            help="Si perdiste el progreso o quieres adelantar/retrasar el programa",
+            help="Solo cambia la semana que estás viendo/entrenando. No reinicia el progreso.",
         )
-        if st.button("🚀 Empezar desde esa semana", use_container_width=True, key="jump_program_week_btn"):
+        if st.button("👀 Ir a esa semana", use_container_width=True, key="jump_program_week_btn"):
             self.set_current_program_week(int(jump_week))
             st.rerun()
+        st.caption(
+            "⚠️ El progreso solo se borra con **Reiniciar Todo el Progreso**. "
+            "Estos botones no cambian la fecha de inicio del calendario."
+        )
 
         col_a, col_b = st.columns(2)
         with col_a:
-            if st.button("📆 Semana de hoy", use_container_width=True, key="sync_calendar_week"):
+            if st.button(
+                "📆 Semana de hoy",
+                use_container_width=True,
+                key="sync_calendar_week",
+                help=(
+                    f"Mueve el selector a la Semana {ctx['today_week']}: la que marca el calendario "
+                    "según tu fecha de inicio del programa y la fecha de hoy. "
+                    "No borra progreso ni cambia la fecha de inicio."
+                ),
+            ):
                 st.session_state.current_week = ctx['today_week']
                 st.rerun()
         with col_b:
-            if st.button("🎯 Auto-detectada", use_container_width=True, key="sync_auto_week"):
+            if st.button(
+                "🎯 Auto-detectada",
+                use_container_width=True,
+                key="sync_auto_week",
+                help=(
+                    f"Mueve el selector a la Semana {ctx['auto_week']}, estimada por tus ejercicios "
+                    "completados (si una semana está ≥80% hecha, sugiere la siguiente). "
+                    "Útil para retomar donde lo dejaste. No borra progreso ni cambia la fecha de inicio."
+                ),
+            ):
                 st.session_state.current_week = ctx['auto_week']
                 st.rerun()
 
         st.caption(
-            f"Auto-detectada: Semana {ctx['auto_week']} · "
+            f"**Semana de hoy** (calendario): {ctx['today_week']} · "
+            f"**Auto-detectada** (progreso): {ctx['auto_week']} · "
             f"Ciclo {today_info['week_in_cycle']}/4"
         )
     
@@ -988,16 +1019,58 @@ class BaseTrainer:
         }
 
     def load_config(self) -> Dict[str, Any]:
-        """Cargar configuración desde config.json"""
+        """Cargar configuración desde config.json (+ overrides de media del usuario)."""
         try:
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                config = json.load(f)
         except FileNotFoundError:
             st.error(f"❌ Archivo config.json no encontrado en: {CONFIG_FILE}")
             return {}
         except json.JSONDecodeError:
             st.error("❌ Error al leer config.json")
             return {}
+        self._apply_media_overrides(config)
+        return config
+
+    def _load_media_overrides(self) -> Dict[str, Any]:
+        """URL de YouTube personalizadas (escribibles en .deb vía DATA_DIR)."""
+        if not os.path.exists(MEDIA_OVERRIDES_FILE):
+            return {}
+        try:
+            with open(MEDIA_OVERRIDES_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return data if isinstance(data, dict) else {}
+        except (OSError, json.JSONDecodeError):
+            return {}
+
+    def _apply_media_overrides(self, config: Dict[str, Any]) -> None:
+        overrides = self._load_media_overrides()
+        youtube_map = overrides.get('youtube_url') or {}
+        if not youtube_map:
+            return
+        for muscle_group, exercises in config.get('exercises', {}).items():
+            group_overrides = youtube_map.get(muscle_group) or {}
+            if not group_overrides:
+                continue
+            for exercise in exercises:
+                name = exercise.get('name')
+                if name in group_overrides:
+                    exercise['youtube_url'] = group_overrides[name]
+
+    def _save_media_override(self, muscle_group: str, exercise_name: str, new_url: str) -> bool:
+        """Guardar URL de YouTube en media_overrides.json (siempre escribible)."""
+        try:
+            ensure_data_dir()
+            overrides = self._load_media_overrides()
+            youtube_map = overrides.setdefault('youtube_url', {})
+            group_map = youtube_map.setdefault(muscle_group, {})
+            group_map[exercise_name] = new_url
+            with open(MEDIA_OVERRIDES_FILE, 'w', encoding='utf-8') as f:
+                json.dump(overrides, f, indent=2, ensure_ascii=False)
+            return True
+        except OSError as e:
+            st.error(f"No se pudo guardar el vídeo personalizado: {e}")
+            return False
 
     def load_progress_data(self) -> Dict[str, Any]:
         """Cargar datos de progreso"""
@@ -1309,7 +1382,6 @@ class BaseTrainer:
 
     def save_progress_data(self):
         """Guardar datos de progreso"""
-        # Añadir timestamp para debug
         self.progress_data['last_saved'] = datetime.datetime.now().isoformat()
         
         try:
@@ -1637,28 +1709,38 @@ class BaseTrainer:
                 st.error("❌ URL no válida")
 
     def update_exercise_youtube_url(self, muscle_group: str, exercise_name: str, new_url: str) -> bool:
-        """Actualizar la URL de YouTube de un ejercicio tanto en memoria como en config.json"""
-        try:
-            exercises = self.config.get('exercises', {}).get(muscle_group, [])
-            updated = False
-            for ex in exercises:
-                if ex.get('name') == exercise_name:
-                    ex['youtube_url'] = new_url
-                    updated = True
-                    break
-            if not updated:
-                st.error("Ejercicio no encontrado en la configuración")
-                return False
-            # Guardar en disco
-            with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-                json.dump(self.config, f, indent=2, ensure_ascii=False)
-            # Limpiar cache para reflejar cambios
+        """Actualizar URL de YouTube en memoria y en disco (config.json o overrides del usuario)."""
+        exercises = self.config.get('exercises', {}).get(muscle_group, [])
+        updated = False
+        for ex in exercises:
+            if ex.get('name') == exercise_name:
+                ex['youtube_url'] = new_url
+                updated = True
+                break
+        if not updated:
+            st.error("Ejercicio no encontrado en la configuración")
+            return False
+
+        # Preferir config.json en desarrollo; en .deb (/opt) cae a media_overrides.json
+        if os.access(CONFIG_FILE, os.W_OK) or (
+            os.path.isdir(os.path.dirname(CONFIG_FILE))
+            and os.access(os.path.dirname(CONFIG_FILE), os.W_OK)
+            and not os.path.exists(CONFIG_FILE)
+        ):
+            try:
+                with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(self.config, f, indent=2, ensure_ascii=False)
+                if hasattr(st, 'cache_data'):
+                    st.cache_data.clear()
+                return True
+            except OSError:
+                pass
+
+        if self._save_media_override(muscle_group, exercise_name, new_url):
             if hasattr(st, 'cache_data'):
                 st.cache_data.clear()
             return True
-        except Exception as e:
-            st.error(f"No se pudo actualizar la URL: {e}")
-            return False
+        return False
 
     def render_week_selector(self):
         """Selector de semana con aviso de alineación al calendario."""
@@ -1674,11 +1756,14 @@ class BaseTrainer:
                 f"Viendo Semana **{ctx['selector_week']}** · Hoy es Semana **{ctx['today_week']}** en el calendario."
             )
             if st.button(
-                f"✅ Continuar el programa desde Semana {ctx['selector_week']}",
+                f"📆 Ir a Semana de hoy ({ctx['today_week']})",
                 key="adopt_week_from_selector",
-                help="Hace que hoy cuente como esa semana (recalcula la fecha de inicio)",
+                help=(
+                    f"Mueve el selector a la Semana {ctx['today_week']} del calendario. "
+                    "No borra progreso ni cambia la fecha de inicio."
+                ),
             ):
-                self.set_current_program_week(ctx['selector_week'])
+                self.set_current_program_week(ctx['today_week'])
                 st.rerun()
 
         col1, col2, col3 = st.columns([3, 1, 1])
@@ -1700,12 +1785,26 @@ class BaseTrainer:
                 st.rerun()
 
         with col2:
-            if st.button("📆 Hoy", help="Ir a la semana del calendario de hoy", use_container_width=True):
+            if st.button(
+                "📆 Hoy",
+                help=(
+                    f"Ir a la Semana {ctx['today_week']} del calendario (fecha de inicio + hoy). "
+                    "Solo cambia lo que estás viendo; no borra progreso."
+                ),
+                use_container_width=True,
+            ):
                 st.session_state.current_week = ctx['today_week']
                 st.rerun()
 
         with col3:
-            if st.button("🎯 Auto", help="Semana según tu progreso", use_container_width=True):
+            if st.button(
+                "🎯 Auto",
+                help=(
+                    f"Ir a la Semana {ctx['auto_week']} según tu progreso guardado "
+                    "(si una semana está ≥80% hecha, sugiere la siguiente). No borra progreso."
+                ),
+                use_container_width=True,
+            ):
                 st.session_state.current_week = ctx['auto_week']
                 st.rerun()
 

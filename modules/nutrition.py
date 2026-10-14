@@ -387,16 +387,26 @@ class NutritionModule(BaseTrainer):
                     with col3:
                         st.write(f"🥑 Grasas: {meal['fat_g']}g")
                     
-                    if st.button(f"🗑️ Eliminar", key=f"delete_meal_{idx}"):
-                        # Restar del total
-                        self.nutrition_data['daily_logs'][date_str]['total']['calories'] -= meal['calories']
-                        self.nutrition_data['daily_logs'][date_str]['total']['protein_g'] -= meal['protein_g']
-                        self.nutrition_data['daily_logs'][date_str]['total']['carbs_g'] -= meal['carbs_g']
-                        self.nutrition_data['daily_logs'][date_str]['total']['fat_g'] -= meal['fat_g']
-                        
-                        # Eliminar comida
-                        self.nutrition_data['daily_logs'][date_str]['meals'].pop(idx)
-                        self.save_nutrition_data()
+                    confirm_key = f"confirm_delete_meal_{date_str}_{idx}"
+                    if st.session_state.get(confirm_key):
+                        st.warning(f"¿Eliminar «{meal['name']}» ({meal['calories']} kcal)?")
+                        col_yes, col_no = st.columns(2)
+                        with col_yes:
+                            if st.button("✅ Sí, eliminar", key=f"confirm_yes_meal_{idx}", type="primary"):
+                                self.nutrition_data['daily_logs'][date_str]['total']['calories'] -= meal['calories']
+                                self.nutrition_data['daily_logs'][date_str]['total']['protein_g'] -= meal['protein_g']
+                                self.nutrition_data['daily_logs'][date_str]['total']['carbs_g'] -= meal['carbs_g']
+                                self.nutrition_data['daily_logs'][date_str]['total']['fat_g'] -= meal['fat_g']
+                                self.nutrition_data['daily_logs'][date_str]['meals'].pop(idx)
+                                self.save_nutrition_data()
+                                st.session_state[confirm_key] = False
+                                st.rerun()
+                        with col_no:
+                            if st.button("Cancelar", key=f"confirm_no_meal_{idx}"):
+                                st.session_state[confirm_key] = False
+                                st.rerun()
+                    elif st.button("🗑️ Eliminar", key=f"delete_meal_{idx}"):
+                        st.session_state[confirm_key] = True
                         st.rerun()
         else:
             st.info("No hay comidas registradas para este día")
