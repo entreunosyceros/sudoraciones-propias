@@ -13,8 +13,8 @@ class TrainingPlanModule(BaseTrainer):
 
     def get_day_completion_stats(self, date_str: str, week_number: int) -> Dict[str, Any]:
         """Obtener estadísticas de finalización para un día específico"""
-        if self.is_future_date(date_str):
-            return self.get_pending_day_stats(is_future=True)
+        # Fechas futuras: si hay marcas (p.ej. explorar Semana 20), calcular igual.
+        # Sin marcas, devolver plan al 0% (no vaciar total) para que el % semanal sea real.
         if self.is_before_program_start(date_str):
             if date_str not in self.progress_data.get('completed_exercises', {}):
                 return self.get_pending_day_stats()
@@ -73,7 +73,8 @@ class TrainingPlanModule(BaseTrainer):
             'percentage': percentage,
             'exercises': exercise_list,
             'muscle_groups': muscle_groups,
-            'is_rest_day': False
+            'is_rest_day': False,
+            'is_future_day': self.is_future_date(date_str),
         }
 
     def get_week_completion_stats(self, week_number: int | None = None) -> Dict[str, Any]:
@@ -612,14 +613,30 @@ class TrainingPlanModule(BaseTrainer):
         if not coverages:
             return
 
-        with st.expander("📊 Cobertura del catálogo (rotación)", expanded=False):
-            st.caption(
-                "Cuántos ejercicios desbloqueados has hecho al menos una vez · "
-                "hoy toca una selección de hasta 6 por grupo"
-            )
+        title = (
+            "📊 Cobertura del catálogo (compensatoria)"
+            if self.is_maintenance_mode()
+            else "📊 Cobertura del catálogo (rotación)"
+        )
+        with st.expander(title, expanded=False):
+            if self.is_maintenance_mode():
+                st.caption(
+                    "En mantener forma se priorizan los ejercicios con menos completados; "
+                    "la selección cambia cada semana para no repetir siempre el mismo set."
+                )
+            else:
+                st.caption(
+                    "Cuántos ejercicios desbloqueados has hecho al menos una vez · "
+                    "hoy toca una selección de hasta 6 por grupo"
+                )
             for cov in coverages:
                 if cov['pool_total'] <= 6:
                     rotation_note = "Catálogo completo en sesión"
+                elif self.is_maintenance_mode():
+                    rotation_note = (
+                        f"Hoy: {len(cov['today_names'])} de {cov['pool_total']} "
+                        "(priorizando menos hechos)"
+                    )
                 else:
                     rotation_note = f"Hoy: {len(cov['today_names'])} de {cov['pool_total']} en rotación"
 
@@ -792,14 +809,30 @@ class TrainingPlanModule(BaseTrainer):
             # Actualizar estado si cambió
             if completed != is_completed:
                 self.mark_exercise_completed(day_date, exercise_id, completed, current_week)
-                
-                # Recargar datos para asegurar persistencia
                 self.reload_progress_data()
-                
+
                 if completed:
-                    st.success(f"🎉 ¡{exercise_name} completado ({day_date})!")
+                    day_stats = self.get_day_completion_stats(day_date, current_week)
+                    if (
+                        day_stats.get('total', 0) > 0
+                        and day_stats.get('percentage', 0) >= 100
+                    ):
+                        notice = {
+                            'type': 'day',
+                            'week': current_week,
+                            'date': day_date,
+                            'message': f"¡Día completado ({day_date})!",
+                        }
+                        if current_week >= 20:
+                            wstats = self.get_week_completion_stats_for_week(20)
+                            notice['week20_days'] = (
+                                wstats.get('completed_days', 0),
+                                wstats.get('total_days', 0),
+                            )
+                            notice['program_ready'] = self.should_show_program_completion_menu()
+                        st.session_state['training_completion_notice'] = notice
                 else:
-                    st.info(f"📋 {exercise_name} marcado como pendiente ({day_date})")
+                    st.session_state.pop('training_completion_notice', None)
                 st.rerun()
         
         # Progresión dinámica según semana del programa
@@ -881,10 +914,111 @@ class TrainingPlanModule(BaseTrainer):
             st.markdown("### 📊 Progreso de Hoy")
             st.warning("⚠️ No hay ejercicios programados para hoy. Revisa la configuración de tu semana.")
 
+    def render_training_completion_notice(self) -> None:
+        """Aviso tras completar un día / semana (persiste un rerun)."""
+        notice = st.session_state.pop('training_completion_notice', None)
+        advanced = st.session_state.pop('week_just_advanced', None)
+        if advanced:
+            st.success(
+                f"🎉 ¡Semana {advanced['from']} completada! "
+                f"Pasando a la Semana {advanced['to']}."
+            )
+        if not notice:
+            return
+        st.success(f"✅ **{notice['message']}**")
+        if notice.get('week', 0) >= 20 and notice.get('week20_days'):
+            done, total = notice['week20_days']
+            st.info(
+                f"Semana 20: **{done}/{total}** días de entrenamiento al ≥80%. "
+                "Al llegar al 80% de la semana aparece el menú de fin de programa."
+            )
+        if notice.get('program_ready') or st.session_state.get('program_just_completed'):
+            st.session_state['program_just_completed'] = True
+
+    def render_program_completion_menu(self) -> None:
+        """Menú al completar las 20 semanas: mantener forma, nuevo ciclo o reiniciar."""
+        if not self.should_show_program_completion_menu():
+            return
+
+        if st.session_state.pop('program_just_completed', None):
+            st.balloons()
+
+        stats = self.get_week_completion_stats_for_week(20)
+        cycle = self.get_program_cycle()
+        st.success("🏆 **¡Programa completado!** Has terminado las 20 semanas del ciclo actual.")
+        st.markdown(
+            f"Semana 20 al **{stats.get('percentage', 0):.0f}%** "
+            f"({stats.get('completed_days', 0)}/{stats.get('total_days', 0)} días). "
+            f"Ciclo **{cycle}**. Elige cómo continuar (el historial se conserva salvo que reinicies todo):"
+        )
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button(
+                "💪 Mantener forma",
+                type="primary",
+                use_container_width=True,
+                key="program_choose_maintenance",
+                help=(
+                    "Sigues en nivel experto. Los ejercicios rotan priorizando "
+                    "los que menos hayas hecho para equilibrar el catálogo."
+                ),
+            ):
+                self.enter_maintenance_mode()
+                st.rerun()
+        with col2:
+            if st.button(
+                "🔁 Nuevo ciclo (Semana 1)",
+                use_container_width=True,
+                key="program_choose_new_cycle",
+                help="Vuelve a la Semana 1 sin borrar el historial. El calendario se realinea a hoy.",
+            ):
+                self.start_new_program_cycle()
+                st.rerun()
+        with col3:
+            if st.button(
+                "🗑️ Reiniciar todo",
+                use_container_width=True,
+                key="program_choose_full_reset",
+                help="Borra todo el progreso. Misma acción que «Reiniciar Todo el Progreso» en la barra lateral.",
+            ):
+                st.session_state.confirm_reset = True
+                st.warning("Confirma el reinicio total en la barra lateral (⚙️).")
+
+        st.caption(
+            "**Mantener forma:** rotación compensatoria (menos hechos primero). "
+            "**Nuevo ciclo:** Semana 1 otra vez, historial intacto. "
+            "**Reiniciar todo:** empieza de cero."
+        )
+        st.markdown("---")
+
+    def render_maintenance_banner(self) -> None:
+        """Aviso persistente mientras el usuario está en modo mantenimiento."""
+        if not self.is_maintenance_mode():
+            return
+        rot_week = self._get_maintenance_rotation_week()
+        started = self.progress_data.get('maintenance_started_at', '—')
+        st.info(
+            f"💪 **Modo mantener forma** (desde {started}) · "
+            f"rotación compensatoria · semana de variación **{rot_week}**. "
+            "Prioriza ejercicios menos realizados del catálogo experto."
+        )
+        if st.button(
+            "🔁 Salir y empezar nuevo ciclo (Semana 1)",
+            key="leave_maintenance_new_cycle",
+            help="Conserva el historial y vuelve al programa desde la Semana 1.",
+        ):
+            self.start_new_program_cycle()
+            st.rerun()
+
     def render_training_plan(self, show_videos: bool, show_instructions: bool, show_tips: bool):
         """Renderizar plan de entrenamiento: sesión de hoy + semana completa opcional."""
         ctx = self.get_week_context()
         current_week = ctx['selector_week']
+
+        self.render_training_completion_notice()
+        self.render_program_completion_menu()
+        self.render_maintenance_banner()
 
         if 'plan_view_mode' not in st.session_state:
             st.session_state.plan_view_mode = 'Hoy'
@@ -991,7 +1125,13 @@ class TrainingPlanModule(BaseTrainer):
 
         self.reload_progress_data()
         week_stats = self.get_week_completion_stats(current_week)
+        day_based = self.get_week_completion_stats_for_week(current_week)
         st.markdown("### 📈 Progreso de esta semana")
+        if current_week >= 20:
+            st.caption(
+                "Fin de programa: se completa con **≥80% de los días de entrenamiento** de la Semana 20 "
+                f"(ahora {day_based.get('completed_days', 0)}/{day_based.get('total_days', 0)})."
+            )
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Ejercicios Completados", week_stats['completed'], f"de {week_stats['total']}")
@@ -999,16 +1139,19 @@ class TrainingPlanModule(BaseTrainer):
             week_percentage = week_stats['percentage']
             st.metric("Progreso de la Semana", f"{week_percentage:.1f}%")
         with col3:
-            week_remaining = week_stats['total'] - week_stats['completed']
-            st.metric("Pendientes", week_remaining, f"{-week_remaining}" if week_remaining > 0 else "0")
+            st.metric(
+                "Días ≥80%",
+                f"{day_based.get('completed_days', 0)}/{day_based.get('total_days', 0)}",
+            )
         with col4:
-            if week_percentage >= 80:
-                st.metric("Estado", "🎉 Excelente", "¡Casi completada!")
+            days_pct = day_based.get('percentage', 0)
+            if days_pct >= 80:
+                st.metric("Estado", "🎉 Semana OK", "≥80% días")
             elif week_percentage >= 50:
                 st.metric("Estado", "👍 Buen ritmo", "¡Sigue así!")
             else:
                 st.metric("Estado", "💪 En marcha", "¡A por ello!")
-        st.progress(week_percentage / 100, text=f"Progreso semanal: {week_percentage:.0f}%")
+        st.progress(week_percentage / 100, text=f"Progreso semanal (ejercicios): {week_percentage:.0f}%")
         with st.expander("📅 Detalle por días", expanded=False):
             day_names_full = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
             for day_stat in week_stats['days']:

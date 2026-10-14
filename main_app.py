@@ -206,6 +206,9 @@ class ModernHeavyDutyTrainer:
             },
             'completed_exercises': {},
             'exercise_weeks': {},
+            'program_mode': 'active',
+            'program_cycle': 1,
+            'last_celebrated_cycle': 0,
             'last_updated': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
         
@@ -288,11 +291,15 @@ class ModernHeavyDutyTrainer:
             # Información del programa
             total_exercises = self.base_trainer.get_total_exercises_count()
             ctx = self.base_trainer.get_week_context()
+            cycle = self.base_trainer.get_program_cycle()
+            mode = self.base_trainer.get_program_mode()
+            mode_label = "Mantener forma" if mode == "maintenance" else f"Ciclo {cycle}"
             st.markdown("### ℹ️ Información")
             st.info(f"""
             **Semana de hoy:** {ctx['today_week']}/20
             **Total ejercicios:** {total_exercises}
             **Nivel hoy:** {ctx['week_info_today']['level_name']}
+            **Modo:** {mode_label}
             """)
             
             # Configuración de fecha de inicio del programa

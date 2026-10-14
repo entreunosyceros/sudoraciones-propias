@@ -474,6 +474,15 @@ class ProgressModule(BaseTrainer):
         today_week = self.get_training_week_for_date(datetime.date.today().strftime('%Y-%m-%d'))
         auto_week = self.get_auto_detected_week()
 
+        if self.is_maintenance_mode():
+            tips.append({
+                'level': 'info',
+                'text': (
+                    "💪 **Mantener forma:** la sesión prioriza ejercicios menos hechos. "
+                    "Completa al ≥80% para ir equilibrando el catálogo."
+                ),
+            })
+
         # Consistencia del mes
         if month_planned == 0 and total_workouts == 0:
             tips.append({

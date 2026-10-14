@@ -207,7 +207,24 @@ class BaseTrainer:
         max_weeks = int(self.config.get('total_weeks', 20))
         week_number = min(max(int(week_number), 1), max_weeks)
         st.session_state.current_week = week_number
+        # No tocar keys de widgets ya instanciados (jump_program_week / week_selector).
+        # Se sincronizan en el siguiente render vía _apply_pending_week_widget_sync().
+        st.session_state['_pending_week_widget_sync'] = week_number
+        # Si saltamos a otra semana distinta de hoy, mostrar esa semana (no la sesión de hoy)
+        today_str = datetime.datetime.now().strftime('%Y-%m-%d')
+        today_week = self.get_training_week_for_date(today_str)
+        if week_number != today_week:
+            st.session_state.plan_view_mode = 'Semana completa'
         return True
+
+    def _apply_pending_week_widget_sync(self) -> None:
+        """Sincronizar selectores de semana ANTES de crear los widgets (exigencia de Streamlit)."""
+        pending = st.session_state.pop('_pending_week_widget_sync', None)
+        if pending is None:
+            return
+        week_number = int(pending)
+        st.session_state.week_selector = week_number
+        st.session_state.jump_program_week = week_number
 
     def get_week_completion_stats_for_week(self, week_number: int) -> Dict[str, Any]:
         """Porcentaje de días de entrenamiento completados (≥80%) en una semana del programa."""
@@ -224,23 +241,24 @@ class BaseTrainer:
     
     def check_and_advance_week_automatically(self):
         """Verificar si la semana actual está completa y avanzar automáticamente"""
-        current_week = st.session_state.get('current_week', 1)
+        current_week = int(st.session_state.get('current_week', 1))
         
-        # No avanzar si ya estamos en la semana 20 (última)
+        # Semana 20: no avanzar; activar menú de fin de programa si corresponde
         if current_week >= 20:
+            if self.is_week20_complete() and self.should_show_program_completion_menu():
+                st.session_state['program_just_completed'] = True
             return False
             
-        # Calcular completado de la semana actual (fechas del programa, no rolling 7 días)
-        completion_stats = self._get_training_plan_module().get_week_completion_stats(current_week)
+        # Completado por días de entrenamiento ≥80% (alineado con Progreso/Estadísticas)
+        completion_stats = self.get_week_completion_stats_for_week(current_week)
         
-        # Si está 100% completada, avanzar automáticamente
-        if completion_stats['percentage'] >= 100:
+        if completion_stats['percentage'] >= 80 and completion_stats['total_days'] > 0:
             new_week = current_week + 1
-            st.session_state.current_week = new_week
-            
-            # Mostrar mensaje de celebración
-            st.success(f"🎉 ¡Semana {current_week} completada! Avanzando automáticamente a la Semana {new_week}")
-            st.balloons()
+            self.set_current_program_week(new_week)
+            st.session_state['week_just_advanced'] = {
+                'from': current_week,
+                'to': new_week,
+            }
             return True
         
         return False
@@ -431,6 +449,72 @@ class BaseTrainer:
             display_reps = self._apply_rep_increment(progression_base, week_bonus + level_bonus)
         return display_sets, display_reps
 
+    def get_program_mode(self) -> str:
+        """Modo del programa: active | maintenance."""
+        mode = (self.progress_data.get('program_mode') or 'active').lower()
+        return mode if mode in ('active', 'maintenance') else 'active'
+
+    def is_maintenance_mode(self) -> bool:
+        return self.get_program_mode() == 'maintenance'
+
+    def get_program_cycle(self) -> int:
+        try:
+            return max(1, int(self.progress_data.get('program_cycle') or 1))
+        except (TypeError, ValueError):
+            return 1
+
+    def is_week20_complete(self) -> bool:
+        """True si la semana 20 del ciclo actual tiene ≥80% de días de entrenamiento."""
+        stats = self.get_week_completion_stats_for_week(20)
+        return stats.get('total_days', 0) > 0 and stats.get('percentage', 0) >= 80
+
+    def should_show_program_completion_menu(self) -> bool:
+        """Mostrar menú de fin de programa si la semana 20 está completa y aún no eligieron."""
+        if self.is_maintenance_mode():
+            return False
+        if not self.is_week20_complete():
+            return False
+        last_celebrated = int(self.progress_data.get('last_celebrated_cycle') or 0)
+        return last_celebrated < self.get_program_cycle()
+
+    def _get_maintenance_rotation_week(self) -> int:
+        """Semana relativa desde que se activó el modo mantenimiento (para variar la rotación)."""
+        start = self.progress_data.get('maintenance_started_at')
+        if not start:
+            return 1
+        try:
+            start_date = datetime.datetime.strptime(start, '%Y-%m-%d').date()
+        except ValueError:
+            return 1
+        days = (datetime.date.today() - start_date).days
+        return max(1, days // 7 + 1)
+
+    def enter_maintenance_mode(self) -> None:
+        """Mantener forma: semana 20/experto con rotación compensatoria."""
+        today = datetime.date.today().strftime('%Y-%m-%d')
+        self.progress_data['program_mode'] = 'maintenance'
+        self.progress_data['maintenance_started_at'] = today
+        self.progress_data['last_celebrated_cycle'] = self.get_program_cycle()
+        self.progress_data['program_completed_at'] = today
+        self.save_progress_data()
+        self.set_current_program_week(20)
+
+    def start_new_program_cycle(self) -> None:
+        """Nuevo ciclo desde semana 1 conservando el historial de ejercicios."""
+        today = datetime.date.today().strftime('%Y-%m-%d')
+        current_cycle = self.get_program_cycle()
+        self.progress_data['last_celebrated_cycle'] = current_cycle
+        self.progress_data['program_cycle'] = current_cycle + 1
+        self.progress_data['program_mode'] = 'active'
+        self.progress_data['program_completed_at'] = today
+        self.progress_data.pop('maintenance_started_at', None)
+        # Realianza el calendario al nuevo ciclo sin borrar completed_exercises
+        self.progress_data['program_start_date'] = today
+        self.update_calendar_mapping()
+        self.save_progress_data()
+        self.set_current_program_week(1)
+        st.session_state.plan_view_mode = 'Hoy'
+
     def get_planned_exercises_for_group(self, muscle_group: str, day_key: str, week_number: int) -> list[dict]:
         """Devolver ejercicios planificados con tope de 6 por sesión, rotación y calistenia como complemento"""
         all_ex = self.config.get('exercises', {}).get(muscle_group, [])
@@ -438,7 +522,12 @@ class BaseTrainer:
         if muscle_group == 'abs':
             all_ex = all_ex + self.config.get('exercises', {}).get('abs_avanzados', [])
 
-        current_level = (week_number - 1) // 4 + 1
+        # En mantenimiento se usa el catálogo experto completo
+        if self.is_maintenance_mode():
+            current_level = 4
+            week_number = 20
+        else:
+            current_level = (week_number - 1) // 4 + 1
         available_exercises = self._filter_exercises_by_level(all_ex, current_level)
         available_exercises = self.filter_exercises_by_equipment(available_exercises)
         primary, calisthenics = self._split_primary_and_calisthenics(available_exercises)
@@ -480,6 +569,11 @@ class BaseTrainer:
         if not calisthenics:
             return None
 
+        if self.is_maintenance_mode():
+            return self._choose_least_done_exercises(
+                calisthenics, muscle_group, day_key, self._get_maintenance_rotation_week(), 1
+            )[0]
+
         calisthenics = sorted(calisthenics, key=lambda x: x.get('difficulty_level', 1))
 
         day_idx = self.DAY_KEYS.index(day_key) if day_key in self.DAY_KEYS else 0
@@ -513,6 +607,29 @@ class BaseTrainer:
         group_offset = sum(ord(c) for c in muscle_group) % pool_size
         return ((week_number - 1) * 7 + day_idx + group_offset) % pool_size
 
+    def _choose_least_done_exercises(
+        self,
+        exercises: list[dict],
+        muscle_group: str,
+        day_key: str,
+        rotation_week: int,
+        max_count: int,
+    ) -> list[dict]:
+        """Priorizar ejercicios menos realizados; empates se rompen con rotación semanal."""
+        if not exercises or max_count <= 0:
+            return []
+
+        def sort_key(exercise: dict) -> tuple:
+            name = exercise.get('name', '')
+            count = self.get_exercise_completion_count(muscle_group, name)
+            # Variación estable por semana/día para no repetir siempre el mismo set en empates
+            day_idx = self.DAY_KEYS.index(day_key) if day_key in self.DAY_KEYS else 0
+            tie = (sum(ord(c) for c in name) + rotation_week * 7 + day_idx) % 997
+            return (count, tie, name)
+
+        ranked = sorted(exercises, key=sort_key)
+        return ranked[: min(max_count, len(ranked))]
+
     def _choose_rotating_exercises(
         self,
         exercises: list[dict],
@@ -524,6 +641,15 @@ class BaseTrainer:
         """Seleccionar hasta max_count ejercicios rotando cuando el catálogo desbloqueado supera el tope"""
         if not exercises or max_count <= 0:
             return []
+
+        if self.is_maintenance_mode():
+            return self._choose_least_done_exercises(
+                exercises,
+                muscle_group,
+                day_key,
+                self._get_maintenance_rotation_week(),
+                max_count,
+            )
 
         sorted_exercises = sorted(
             exercises,
@@ -615,7 +741,7 @@ class BaseTrainer:
         if muscle_group == 'abs':
             all_exercises.extend(self.config.get('exercises', {}).get('abs_avanzados', []))
 
-        current_level = (week_number - 1) // 4 + 1
+        current_level = 4 if self.is_maintenance_mode() else (week_number - 1) // 4 + 1
         available = self._filter_exercises_by_level(all_exercises, current_level)
         available = self.filter_exercises_by_equipment(available)
 
@@ -666,6 +792,7 @@ class BaseTrainer:
 
     def render_week_coherence_panel(self):
         """Panel lateral: semana del calendario vs semana del selector."""
+        self._apply_pending_week_widget_sync()
         ctx = self.get_week_context()
         today_info = ctx['week_info_today']
         selector_info = ctx['week_info_selector']
@@ -696,11 +823,12 @@ class BaseTrainer:
                 self.set_current_program_week(ctx['today_week'])
                 st.rerun()
 
+        if 'jump_program_week' not in st.session_state:
+            st.session_state.jump_program_week = min(max(ctx['today_week'], 1), max_weeks)
         jump_week = st.number_input(
             "Ir a la semana:",
             min_value=1,
             max_value=max_weeks,
-            value=min(max(ctx['today_week'], 1), max_weeks),
             step=1,
             key="jump_program_week",
             help="Solo cambia la semana que estás viendo/entrenando. No reinicia el progreso.",
@@ -725,7 +853,8 @@ class BaseTrainer:
                     "No borra progreso ni cambia la fecha de inicio."
                 ),
             ):
-                st.session_state.current_week = ctx['today_week']
+                self.set_current_program_week(ctx['today_week'])
+                st.session_state.plan_view_mode = 'Hoy'
                 st.rerun()
         with col_b:
             if st.button(
@@ -738,7 +867,7 @@ class BaseTrainer:
                     "Útil para retomar donde lo dejaste. No borra progreso ni cambia la fecha de inicio."
                 ),
             ):
-                st.session_state.current_week = ctx['auto_week']
+                self.set_current_program_week(ctx['auto_week'])
                 st.rerun()
 
         st.caption(
@@ -764,9 +893,15 @@ class BaseTrainer:
         """Elegir ejercicio de antebrazo según nivel y rotación"""
         if not forearm_exercises:
             return None
+
+        if self.is_maintenance_mode():
+            chosen = self._choose_least_done_exercises(
+                forearm_exercises, 'brazos', day_key, self._get_maintenance_rotation_week(), 1
+            )
+            return chosen[0] if chosen else None
         
         # Ordenar por nivel de dificultad
-        forearm_exercises.sort(key=lambda x: x.get('difficulty_level', 1))
+        forearm_exercises = sorted(forearm_exercises, key=lambda x: x.get('difficulty_level', 1))
         
         day_idx = self.DAY_KEYS.index(day_key) if day_key in self.DAY_KEYS else 0
         rotation_index = ((week_number - 1) * 7 + day_idx) % len(forearm_exercises)
@@ -1100,7 +1235,10 @@ class BaseTrainer:
             "current_month": current_month,
             "total_workouts": 0,
             "completed_exercises": {},
-            "exercise_weeks": {}
+            "exercise_weeks": {},
+            "program_mode": "active",
+            "program_cycle": 1,
+            "last_celebrated_cycle": 0,
         }
         
         # Crear archivo inicial si no existe
@@ -1111,7 +1249,11 @@ class BaseTrainer:
 
     def migrate_progress_data(self, data: Dict[str, Any]):
         """Migrar datos de progreso antiguos para añadir información de semanas"""
-        # Si ya tiene exercise_weeks, no necesita migración
+        data.setdefault('program_mode', 'active')
+        data.setdefault('program_cycle', 1)
+        data.setdefault('last_celebrated_cycle', 0)
+
+        # Si ya tiene exercise_weeks, no necesita migración de semanas
         if 'exercise_weeks' in data:
             return
         
@@ -1350,32 +1492,33 @@ class BaseTrainer:
         count = 0
         if 'completed_exercises' not in self.progress_data:
             return count
+
+        # abs y abs_avanzados se planifican juntos; contar ambos orígenes
+        accepted_groups = {muscle_group}
+        if muscle_group == 'abs':
+            accepted_groups.add('abs_avanzados')
+        elif muscle_group == 'abs_avanzados':
+            accepted_groups.add('abs')
         
         for date_str, exercises_day in self.progress_data['completed_exercises'].items():
             for exercise_id, is_completed in exercises_day.items():
                 if is_completed:
                     # Formato esperado: muscle_group_exercise_name_day_weekN
-                    # Necesitamos extraer grupo y ejercicio, ignorando día y semana
                     parts = exercise_id.split('_')
-                    if len(parts) >= 4:  # al menos: grupo_ejercicio_dia_weekN
-                        # El grupo muscular es la primera parte
+                    if len(parts) >= 4:
                         id_muscle_group = parts[0]
-                        
-                        # Buscar dónde termina el nombre del ejercicio y empieza el día
-                        # Encontrar el día en el ID
                         day_index = -1
                         for i, part in enumerate(parts):
                             if part in self.DAY_KEYS:
                                 day_index = i
                                 break
                         
-                        if day_index > 1:  # debe haber al menos grupo_ejercicio_dia
-                            # Reconstruir el nombre del ejercicio (sin día ni semana)
+                        if day_index > 1:
                             id_exercise_name = '_'.join(parts[1:day_index])
-                            
-                            # Verificar coincidencia exacta (ignorando semana)
-                            if (id_muscle_group == muscle_group and 
-                                id_exercise_name == exercise_name):
+                            if (
+                                id_muscle_group in accepted_groups
+                                and id_exercise_name == exercise_name
+                            ):
                                 count += 1
         
         return count
@@ -1744,6 +1887,7 @@ class BaseTrainer:
 
     def render_week_selector(self):
         """Selector de semana con aviso de alineación al calendario."""
+        self._apply_pending_week_widget_sync()
         ctx = self.get_week_context()
         st.markdown("### 📅 Explorar otra semana")
         st.caption(
@@ -1769,19 +1913,22 @@ class BaseTrainer:
         col1, col2, col3 = st.columns([3, 1, 1])
         with col1:
             max_weeks = self.config.get('total_weeks', 20)
+            # Sin index= fijo: el valor vive en session_state.week_selector (sincronizado
+            # con current_week vía set_current_program_week).
+            if 'week_selector' not in st.session_state:
+                st.session_state.week_selector = ctx['selector_week']
             selected_week = st.selectbox(
                 "Semana a visualizar:",
-                range(1, max_weeks + 1),
-                index=ctx['selector_week'] - 1,
+                options=list(range(1, max_weeks + 1)),
                 format_func=lambda x: (
                     f"Semana {x}"
                     + (" · hoy" if x == ctx['today_week'] else "")
-                    + (" · viendo" if x == ctx['selector_week'] else "")
+                    + (" · viendo" if x == int(st.session_state.get('current_week', 1)) else "")
                 ),
                 key="week_selector",
             )
-            if selected_week != st.session_state.current_week:
-                st.session_state.current_week = selected_week
+            if int(selected_week) != int(st.session_state.get('current_week', 1)):
+                self.set_current_program_week(int(selected_week))
                 st.rerun()
 
         with col2:
@@ -1793,7 +1940,8 @@ class BaseTrainer:
                 ),
                 use_container_width=True,
             ):
-                st.session_state.current_week = ctx['today_week']
+                self.set_current_program_week(ctx['today_week'])
+                st.session_state.plan_view_mode = 'Hoy'
                 st.rerun()
 
         with col3:
@@ -1805,7 +1953,7 @@ class BaseTrainer:
                 ),
                 use_container_width=True,
             ):
-                st.session_state.current_week = ctx['auto_week']
+                self.set_current_program_week(ctx['auto_week'])
                 st.rerun()
 
         st.markdown("---")
