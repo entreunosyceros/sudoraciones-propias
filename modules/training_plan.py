@@ -1020,6 +1020,7 @@ class TrainingPlanModule(BaseTrainer):
         self.render_program_completion_menu()
         self.render_maintenance_banner()
 
+        self._apply_pending_plan_view_mode()
         if 'plan_view_mode' not in st.session_state:
             st.session_state.plan_view_mode = 'Hoy'
 

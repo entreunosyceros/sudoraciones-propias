@@ -207,14 +207,16 @@ class BaseTrainer:
         max_weeks = int(self.config.get('total_weeks', 20))
         week_number = min(max(int(week_number), 1), max_weeks)
         st.session_state.current_week = week_number
-        # No tocar keys de widgets ya instanciados (jump_program_week / week_selector).
-        # Se sincronizan en el siguiente render vía _apply_pending_week_widget_sync().
+        # No tocar keys de widgets ya instanciados (jump_program_week / week_selector
+        # / plan_view_mode). Se sincronizan en el siguiente render, antes de crearlos.
         st.session_state['_pending_week_widget_sync'] = week_number
-        # Si saltamos a otra semana distinta de hoy, mostrar esa semana (no la sesión de hoy)
+        # Si saltamos a otra semana distinta de hoy, mostrar esa semana (no la sesión de hoy).
+        # Encolar el cambio: al marcar un ejercicio el radio plan_view_mode ya existe
+        # y Streamlit prohíbe escribir su key en el mismo run.
         today_str = datetime.datetime.now().strftime('%Y-%m-%d')
         today_week = self.get_training_week_for_date(today_str)
         if week_number != today_week:
-            st.session_state.plan_view_mode = 'Semana completa'
+            st.session_state['_pending_plan_view_mode'] = 'Semana completa'
         return True
 
     def _apply_pending_week_widget_sync(self) -> None:
@@ -225,6 +227,12 @@ class BaseTrainer:
         week_number = int(pending)
         st.session_state.week_selector = week_number
         st.session_state.jump_program_week = week_number
+
+    def _apply_pending_plan_view_mode(self) -> None:
+        """Aplicar la vista del plan ANTES del radio con key plan_view_mode."""
+        pending = st.session_state.pop('_pending_plan_view_mode', None)
+        if pending in ('Hoy', 'Semana completa'):
+            st.session_state.plan_view_mode = pending
 
     def get_week_completion_stats_for_week(self, week_number: int) -> Dict[str, Any]:
         """Porcentaje de días de entrenamiento completados (≥80%) en una semana del programa."""
@@ -513,7 +521,9 @@ class BaseTrainer:
         self.update_calendar_mapping()
         self.save_progress_data()
         self.set_current_program_week(1)
-        st.session_state.plan_view_mode = 'Hoy'
+        # Semana 1 suele no ser la de hoy: set_current_program_week encola «Semana completa».
+        # Este ciclo debe abrir la sesión de hoy; la cola se aplica antes del radio.
+        st.session_state['_pending_plan_view_mode'] = 'Hoy'
 
     def get_planned_exercises_for_group(self, muscle_group: str, day_key: str, week_number: int) -> list[dict]:
         """Devolver ejercicios planificados con tope de 6 por sesión, rotación y calistenia como complemento"""
@@ -854,7 +864,7 @@ class BaseTrainer:
                 ),
             ):
                 self.set_current_program_week(ctx['today_week'])
-                st.session_state.plan_view_mode = 'Hoy'
+                st.session_state['_pending_plan_view_mode'] = 'Hoy'
                 st.rerun()
         with col_b:
             if st.button(
@@ -1941,7 +1951,7 @@ class BaseTrainer:
                 use_container_width=True,
             ):
                 self.set_current_program_week(ctx['today_week'])
-                st.session_state.plan_view_mode = 'Hoy'
+                st.session_state['_pending_plan_view_mode'] = 'Hoy'
                 st.rerun()
 
         with col3:
