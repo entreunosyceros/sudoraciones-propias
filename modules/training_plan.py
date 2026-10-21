@@ -19,6 +19,9 @@ class TrainingPlanModule(BaseTrainer):
             if date_str not in self.progress_data.get('completed_exercises', {}):
                 return self.get_pending_day_stats()
 
+        if self.is_after_program(date_str) and not self.is_maintenance_mode():
+            return self.get_pending_day_stats(is_future=self.is_future_date(date_str))
+
         # Obtener plan del día
         week_info = self.get_week_info(week_number)
         
@@ -31,8 +34,7 @@ class TrainingPlanModule(BaseTrainer):
             week_plan = self.generate_advanced_week(week_number)
         
         # Determinar día de la semana
-        date_obj = datetime.datetime.strptime(date_str, '%Y-%m-%d')
-        day_key = self.DAY_KEYS[date_obj.weekday()]
+        day_key = self.get_plan_day_key(date_str)
         
         muscle_groups = week_plan.get(day_key, [])
         
@@ -48,8 +50,9 @@ class TrainingPlanModule(BaseTrainer):
             if muscle_group in self.config.get('exercises', {}):
                 planned = self.get_planned_exercises_for_group(muscle_group, day_key, week_number)
                 for exercise in planned:
-                    exercise_id = f"{muscle_group}_{exercise['name']}_{day_key}_week{week_number}"
-                    is_completed = self.is_exercise_completed(date_str, exercise_id, week_number)
+                    is_completed = self.exercise_is_done(
+                        date_str, muscle_group, exercise['name'], day_key, week_number
+                    )
                     
                     display_sets, display_reps = self.get_exercise_progression(exercise, week_number)
                     
@@ -697,8 +700,16 @@ class TrainingPlanModule(BaseTrainer):
     ):
         """Vista principal: sesión de entrenamiento de hoy según el calendario del programa."""
         ctx = self.get_week_context()
-        today_week = ctx['today_week']
         today = ctx['today']
+        if self.is_after_program(today) and not self.is_maintenance_mode():
+            st.markdown("## 🏋️ Sesión de hoy")
+            st.info(
+                "Esta fecha queda **fuera de las 20 semanas** del programa. "
+                "No hay sesión planificada. Si quieres seguir, activa **mantener forma**."
+            )
+            return
+
+        today_week = ctx['today_week']
         day_key = ctx['today_day_key']
         week_plan = self.get_week_plan(today_week)
         muscle_groups = week_plan.get(day_key, [])
@@ -794,7 +805,9 @@ class TrainingPlanModule(BaseTrainer):
         # Fecha asociada al día mostrado (si no se pasa, usar hoy)
         if day_date is None:
             day_date = datetime.datetime.now().strftime('%Y-%m-%d')
-        is_completed = self.is_exercise_completed(day_date, exercise_id, current_week)
+        is_completed = self.exercise_is_done(
+            day_date, muscle_group, exercise_name, day_key, current_week
+        )
         
         # Checkbox de completado prominente
         col_checkbox, col_title = st.columns([1, 4])
@@ -809,6 +822,11 @@ class TrainingPlanModule(BaseTrainer):
             # Actualizar estado si cambió
             if completed != is_completed:
                 self.mark_exercise_completed(day_date, exercise_id, completed, current_week)
+                if not completed:
+                    civil_key = self.get_calendar_day_key(day_date)
+                    legacy_id = f"{muscle_group}_{exercise_name}_{civil_key}_week{current_week}"
+                    if legacy_id != exercise_id:
+                        self.mark_exercise_completed(day_date, legacy_id, False, current_week)
                 self.reload_progress_data()
 
                 if completed:
@@ -1086,18 +1104,18 @@ class TrainingPlanModule(BaseTrainer):
 
         week_dates = self.get_week_dates(current_week)
         dates_list = week_dates.get('dates', []) if week_dates else []
-        day_order = self.DAY_KEYS
 
         for day_date in dates_list:
             try:
                 date_obj = datetime.datetime.strptime(day_date, '%Y-%m-%d')
-                day_key = day_order[date_obj.weekday()]
+                plan_key = self.get_plan_day_key(day_date)
+                civil_key = self.get_calendar_day_key(day_date)
                 formatted_date = date_obj.strftime('%d-%m-%Y')
             except ValueError:
                 continue
 
-            muscle_groups = week_plan.get(day_key, [])
-            day_display = self.DAY_DISPLAY_NAMES.get(day_key, day_key.upper())
+            muscle_groups = week_plan.get(plan_key, [])
+            day_display = self.DAY_DISPLAY_NAMES.get(civil_key, civil_key.upper())
             is_today = day_date == ctx['today'] and current_week == ctx['today_week']
             title = f"### {day_display} - {formatted_date}"
             if is_today:
@@ -1115,7 +1133,7 @@ class TrainingPlanModule(BaseTrainer):
 
             self._render_training_day_content(
                 muscle_groups,
-                day_key,
+                plan_key,
                 current_week,
                 day_date,
                 show_videos,
@@ -1154,11 +1172,9 @@ class TrainingPlanModule(BaseTrainer):
                 st.metric("Estado", "💪 En marcha", "¡A por ello!")
         st.progress(week_percentage / 100, text=f"Progreso semanal (ejercicios): {week_percentage:.0f}%")
         with st.expander("📅 Detalle por días", expanded=False):
-            day_names_full = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
             for day_stat in week_stats['days']:
                 try:
-                    date_obj = datetime.datetime.strptime(day_stat['date'], '%Y-%m-%d')
-                    day_label = day_names_full[date_obj.weekday()]
+                    day_label = self.get_calendar_day_label(day_stat['date'])
                 except ValueError:
                     day_label = 'Día'
 

@@ -108,7 +108,7 @@ class BaseTrainer:
         3: {
             'title': 'Nivel 3 — Avanzado (semanas 9-12)',
             'changes': [
-                '**5 series** por ejercicio',
+                '**4 series** por ejercicio',
                 'Más frecuencia de **abdominales** y cardio en el calendario',
                 'Reps de fuerza se mantienen estables (sin más subidas)',
                 'Rotación ampliada con más ejercicios en el pool',
@@ -117,7 +117,7 @@ class BaseTrainer:
         4: {
             'title': 'Nivel 4 — Experto (semanas 13-20)',
             'changes': [
-                '**6 series** por ejercicio — volumen máximo',
+                '**4 series** por ejercicio',
                 'Plan avanzado: **6 días** de entrenamiento por semana',
                 'Rotación entre todo el catálogo desbloqueado',
                 'Prioriza la técnica y la recuperación entre sesiones',
@@ -307,8 +307,8 @@ class BaseTrainer:
         return base_reps
 
     def _get_sets_for_program_level(self, level: int) -> int:
-        """Series por nivel del programa: 1→3, 2→4, 3→5, 4+→6."""
-        return {1: 3, 2: 4, 3: 5}.get(level, 6)
+        """Series por nivel: 3 en el nivel 1 y 4 a partir del nivel 2."""
+        return 3 if level <= 1 else 4
 
     def _get_forearm_reps(self, level: int, week_in_cycle: int) -> str:
         """Repeticiones de antebrazo según nivel (series las marca el nivel del programa)."""
@@ -731,7 +731,7 @@ class BaseTrainer:
         today_week = self.get_training_week_for_date(today_str)
         selector_week = int(st.session_state.get('current_week', 1))
         auto_week = self.get_auto_detected_week()
-        today_day_key = self.DAY_KEYS[today_date.weekday()]
+        today_day_key = self.get_plan_day_key(today_str)
 
         return {
             'today': today_str,
@@ -1342,12 +1342,8 @@ class BaseTrainer:
                 
                 days_diff = (target_date - start_date).days
                 week_num = (days_diff // 7) + 1
-                
-                # Limitar a semanas válidas (1-20)
                 if week_num < 1:
                     return 1
-                elif week_num > 20:
-                    return 20
                 return week_num
             
             # Fallback: semana actual de sesión
@@ -1365,6 +1361,64 @@ class BaseTrainer:
         except ValueError:
             return False
 
+    CALENDAR_DAY_LABELS = [
+        'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo',
+    ]
+
+    def get_calendar_day_key(self, date_str: str) -> str:
+        """Día civil (lunes…domingo) para la etiqueta en pantalla."""
+        date_obj = datetime.datetime.strptime(date_str, '%Y-%m-%d')
+        return self.DAY_KEYS[date_obj.weekday()]
+
+    def get_calendar_day_label(self, date_str: str) -> str:
+        """Nombre del día real, independiente del hueco del plan."""
+        date_obj = datetime.datetime.strptime(date_str, '%Y-%m-%d')
+        return self.CALENDAR_DAY_LABELS[date_obj.weekday()]
+
+    def get_plan_day_key(self, date_str: str) -> str:
+        """Hueco de la plantilla: el día de inicio es el primer día (lunes de la plantilla)."""
+        target = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+        start_raw = self.progress_data.get('program_start_date')
+        if start_raw:
+            try:
+                start = datetime.datetime.strptime(start_raw, '%Y-%m-%d').date()
+                offset = (target - start).days
+                if offset >= 0:
+                    return self.DAY_KEYS[offset % 7]
+            except ValueError:
+                pass
+        return self.DAY_KEYS[target.weekday()]
+
+    def is_after_program(self, date_str: str) -> bool:
+        """True si la fecha cae después de las 20 semanas del programa."""
+        start_raw = self.progress_data.get('program_start_date')
+        if not start_raw:
+            return False
+        try:
+            target = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+            start = datetime.datetime.strptime(start_raw, '%Y-%m-%d').date()
+        except ValueError:
+            return False
+        return (target - start).days >= 20 * 7
+
+    def exercise_is_done(
+        self,
+        date_str: str,
+        muscle_group: str,
+        exercise_name: str,
+        plan_day_key: str,
+        week_number: int,
+    ) -> bool:
+        """Marca del hueco actual, o la guardada con el día civil antiguo en esa misma fecha."""
+        primary = f"{muscle_group}_{exercise_name}_{plan_day_key}_week{week_number}"
+        if self.is_exercise_completed(date_str, primary, week_number):
+            return True
+        civil_key = self.get_calendar_day_key(date_str)
+        legacy = f"{muscle_group}_{exercise_name}_{civil_key}_week{week_number}"
+        if legacy != primary and self.is_exercise_completed(date_str, legacy, week_number):
+            return True
+        return False
+
     def is_before_program_start(self, date_str: str) -> bool:
         """True si la fecha es anterior al inicio del programa."""
         start = self.progress_data.get('program_start_date')
@@ -1378,10 +1432,17 @@ class BaseTrainer:
             return False
 
     def get_training_week_for_date(self, date_str: str) -> int:
-        """Semana efectiva para planificar y marcar ejercicios."""
+        """Semana efectiva para planificar y marcar ejercicios.
+
+        Pasada la semana 20, mantener forma sigue con el plan experto.
+        Sin ese modo, la fecha queda fuera y no se cuenta como semana 20.
+        """
         if self.is_before_program_start(date_str):
             return 1
-        return min(max(self.get_calendar_week_for_date(date_str), 1), 20)
+        week = max(self.get_calendar_week_for_date(date_str), 1)
+        if week > 20 and self.is_maintenance_mode():
+            return 20
+        return week
 
     def get_pending_day_stats(self, week_number: int | None = None, is_future: bool = False) -> Dict[str, Any]:
         """Estadísticas vacías para días futuros o aún no alcanzados."""

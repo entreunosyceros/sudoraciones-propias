@@ -9,18 +9,18 @@ La app calcula **series y repeticiones visibles** en el plan, la biblioteca y la
 
 | Tipo | Semana 1 | Series por nivel | Progresión de reps |
 |------|----------|------------------|-------------------|
-| **Fuerza** (tope ≤ 12 reps en plantilla) | 9-10 | N1: **3** · N2: **4** · N3: **5** · N4+: **6** | N1-2: +1 rep/semana del ciclo y +2/nivel; N3+: reps fijas en 9-10 (o plantilla) |
-| **Planchas** | 30-60 s (según ejercicio) | 3 / 4 / 5 / 6 series | +10 s por cada cambio de nivel |
+| **Fuerza** (tope ≤ 12 reps en plantilla) | 9-10 | N1: **3** · N2: **4** · N3: **4** · N4+: **4** | N1-2: +1 rep/semana del ciclo y +2/nivel; N3+: reps fijas en 9-10 (o plantilla) |
+| **Planchas** | 30-60 s (según ejercicio) | 3 / 4 / 4 / 4 series | +10 s por cada cambio de nivel |
 | **Bicicleta** | 15 km (niveles 1-2) | 1 sesión | 20 km desde nivel 3 |
-| **Alto volumen** (> 12 reps: gemelos, abdominales…) | Valor de plantilla | 3 / 4 / 5 / 6 series | N1-2: +1 rep/semana y +2/nivel; N3+: reps fijas |
-| **Curl 21s, tiempos auxiliares** | Sin cambio automático | 3 / 4 / 5 / 6 series | Valor fijo de plantilla |
+| **Alto volumen** (> 12 reps: gemelos, abdominales…) | Valor de plantilla | 3 / 4 / 4 / 4 series | N1-2: +1 rep/semana y +2/nivel; N3+: reps fijas |
+| **Curl 21s, tiempos auxiliares** | Sin cambio automático | 3 / 4 / 4 / 4 series | Valor fijo de plantilla |
 
 ### Niveles (20 semanas)
 
 - **Nivel 1 (Semanas 1-4):** adaptación inicial — **3 series**, reps 9-10 en fuerza, +1 rep por semana del ciclo.
 - **Nivel 2 (Semanas 5-8):** incremento de frecuencia — **4 series**, +2 reps respecto al punto de partida del nivel 1.
-- **Nivel 3 (Semanas 9-12):** incremento de volumen — **5 series**, reps de fuerza se mantienen en 9-10 (sin más subidas de reps).
-- **Nivel 4+ (Semanas 13-20):** plan avanzado — **6 series**, reps de fuerza estables.
+- **Nivel 3 (Semanas 9-12):** incremento de volumen — **4 series**, reps de fuerza se mantienen en 9-10 (sin más subidas de reps).
+- **Nivel 4+ (Semanas 13-20):** plan avanzado — **4 series**, reps de fuerza estables.
 
 ### Frecuencia de abdominales por nivel
 

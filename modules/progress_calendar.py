@@ -342,7 +342,6 @@ class ProgressModule(BaseTrainer):
         st.caption(f"{week_dates['start_date']} ➜ {week_dates['end_date']}")
         st.markdown("**Solo se muestran los días con entrenamiento planificado o registrado (se excluyen descansos).**")
 
-        day_names_map = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo']
         training_days = []
         for idx, date_str in enumerate(dates_list):
             stats = self.get_day_completion_stats_filtered(date_str, view_week)
@@ -376,9 +375,10 @@ class ProgressModule(BaseTrainer):
         </style>
         """, unsafe_allow_html=True)
 
-        for idx, date_str, stats in training_days:
+        for _idx, date_str, stats in training_days:
             date_obj = datetime.datetime.strptime(date_str,'%Y-%m-%d')
             pretty = date_obj.strftime('%d-%m-%Y')
+            day_label = self.get_calendar_day_label(date_str)
             pct = stats.get('percentage',0)
             if pct >= 100:
                 badge_class='badge-full'; label='100%'
@@ -394,7 +394,7 @@ class ProgressModule(BaseTrainer):
             st.markdown(f"""
             <div class='week-day-card'>
               <div class='week-day-header'>
-                <div><strong>{day_names_map[idx]}</strong> · {pretty}</div>
+                <div><strong>{day_label}</strong> · {pretty}</div>
                 <div class='badge {badge_class}'>{label}</div>
               </div>
               <div style='margin-top:6px;font-size:13px;'>Ejercicios: {completed}/{total} · Grupos: {mg}</div>
